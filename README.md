@@ -1,6 +1,8 @@
 # CloudOS.Messaging
 
-This reusable Elixir messaging library provides abstracted methods for interacting with the CloudOS Messaging system.
+This reusable Elixir messaging library provides abstracted methods for interacting with the CloudOS Messaging system.  
+
+Currently this library utlizes an AMQP client as its primary communication mechanism.  However, it add supervision and reconnection logic for Connections and Channels.
 
 ## Usage
 
