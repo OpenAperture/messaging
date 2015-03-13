@@ -5,6 +5,8 @@ defmodule CloudOS.Messaging.Mixfile do
     [app: :cloudos_messaging,
      version: "0.0.1",
      elixir: "~> 1.0",
+     elixirc_paths: ["lib"],
+     escript: [main_module: CloudOS.Messaging],
      deps: deps]
   end
 
@@ -12,7 +14,10 @@ defmodule CloudOS.Messaging.Mixfile do
   #
   # Type `mix help compile.app` for more information
   def application do
-    [applications: [:logger]]
+    [
+      mod: { CloudOS.Messaging, [] },
+      applications: [:logger]
+    ]
   end
 
   # Dependencies can be Hex packages:

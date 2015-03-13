@@ -16,24 +16,6 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolsTest do
   alias CloudOS.Messaging.AMQP.Exchange, as: MessagingExchange
 
   ## =============================
-  # start_link tests
-
-  test "start_link - success" do
-    {result, pid} = ConnectionPools.start_link()
-    assert result == :ok
-    assert is_pid pid
-  end
-
-  ## =============================
-  # start_link tests
-
-  test "create - success" do
-    {result, pid} = ConnectionPools.create()
-    assert result == :ok
-    assert is_pid pid
-  end
-
-  ## =============================
   # get_pool tests
 
   test "get_pool - provide url" do
