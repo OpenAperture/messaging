@@ -45,18 +45,4 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolsTest do
 
     assert result == result2
   end
-
-  test "get_pool - fails" do
-    :meck.new(ConnectionPool, [:passthrough])
-    :meck.expect(ConnectionPool, :start_link, fn opts -> {:error, "bad news bears"} end)
-
-    {result, pid} = ConnectionPools.create()
-    result = ConnectionPools.get_pool([
-      connection_url: "amqp://#user:password@host/virtual_host"
-      ])
-
-    assert result == nil
-  after
-    :meck.unload(ConnectionPool)
-  end
 end

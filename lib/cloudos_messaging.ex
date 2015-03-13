@@ -3,6 +3,8 @@
 #
 # This module contains definition the CloudOS Messaging implementation
 #
+require Logger
+
 defmodule CloudOS.Messaging do
   use Application
 
@@ -46,7 +48,17 @@ defmodule CloudOS.Messaging do
   """
   @spec start(atom, [any]) :: :ok | {:error, String.t()}
   def start(_type, _args) do
-    CloudOS.Messaging.AMQP.ConnectionSupervisor.start_link
+    import Supervisor.Spec, warn: false
+
+    Logger.info("Starting CloudOS.Messaging...")
+
+    children = [
+      # Define workers and child supervisors to be supervised
+      supervisor(CloudOS.Messaging.AMQP.ConnectionSupervisor, [])
+    ]
+
+    opts = [strategy: :one_for_one, name: CloudosBuildServer.Supervisor]
+    Supervisor.start_link(children, opts)
   end
 
 	defmacro __using__(_) do
