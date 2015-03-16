@@ -77,7 +77,6 @@ defmodule CloudOS.Messaging do
       alias CloudOS.Messaging.Queue
       alias CloudOS.Messaging.AMQP.ConnectionPools
 			alias CloudOS.Messaging.AMQP.ConnectionPool
-			alias CloudOS.Messaging.AMQP.AMQPOptions
 
 		  @doc """
 		  Subscribes to a specific queue within the Messaging system

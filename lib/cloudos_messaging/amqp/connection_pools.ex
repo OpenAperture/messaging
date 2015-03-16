@@ -10,6 +10,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPools do
   use GenServer
 
   alias CloudOS.Messaging.AMQP.ConnectionPool
+  alias CloudOS.Messaging.AMQP.ConnectionOptions
 
   @moduledoc """
   This module contains the GenServer for managing getting ConnectionPools
@@ -78,17 +79,13 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPools do
   """  
   @spec handle_call({:get_pool, List}, term, term) :: {:reply, term, term}
   def handle_call({:get_pool, connection_options}, _from, state) do
-    connection_url = case Keyword.get(connection_options, :connection_url, nil) do
-      nil ->
-        #build a url:  amqp://user:pass@host/vhost
-        user = Keyword.get(connection_options, :username, "")
-        password = Keyword.get(connection_options, :password, "")
-        host = Keyword.get(connection_options, :host, "")
-        virtual_host = Keyword.get(connection_options, :virtual_host, "")
-        "amqp://#{user}:#{password}@#{host}/#{virtual_host}"
-      connection_url -> connection_url
+    connection_options = if connection_options[:connection_url] != nil do
+      connection_options
+    else
+      connection_url = ConnectionOptions.get_connection_url(connection_options)
+      Keyword.update(connection_options, :connection_url, connection_url, fn(_) -> connection_url end)      
     end
-    connection_options = Keyword.update(connection_options, :connection_url, connection_url, fn(_) -> connection_url end)
+    connection_url = Keyword.get(connection_options, :connection_url)
 
     case state[:pools][connection_url] do
       nil ->
@@ -97,11 +94,11 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPools do
             Logger.debug("Successfully started ConnectionPool for #{connection_options[:host]}")
             {:reply, pool, resolved_state}
           {:error, reason, resolved_state} ->
-            Logger.error("Failed to restart ConnectionPool for #{connection_options[:host]}: #{inspect reason}")
+            Logger.error("Failed to start ConnectionPool for #{connection_options[:host]}: #{inspect reason}")
             {:reply, nil, resolved_state}
         end
       pool -> {:reply, pool, state}
-    end    
+    end
   end
 
   @doc """

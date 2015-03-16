@@ -11,6 +11,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   use GenServer
 	use AMQP
 
+  alias CloudOS.Messaging.ConnectionOptions
+  alias CloudOS.Messaging.AMQP.ConnectionPools
+
   @moduledoc """
   This module contains the GenServer for a specific connection pool, which manages all connections to the AMQP host
   """  
@@ -195,18 +198,49 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   @spec handle_call({:publish, String.t(), String.t(), term}, term, term) :: {:reply, term, term}
   def handle_call({:publish, exchange, queue, payload}, _from, state) do
     try do
-      case get_channel(state) do
-        {nil, resolved_state} -> {:reply, {:error, "Unable to subsribe to queue on the AMQP broker because no channel was found"}, resolved_state}        
-        {channel_id, resolved_state} ->
-          channel = resolved_state[:channels_info][:channels][channel_id]
-          Basic.publish(channel, exchange.name, queue.name, serilalize(payload), [:persistent])
-          {:reply, :ok, resolved_state}
+      if state[:failover_connection_pool] != nil do
+        {:reply, :ok, publish_to_failover(state, exchange, queue, payload)}
+      else
+        case get_channel(state) do
+          {nil, resolved_state} -> 
+            #get_channel can create the failover connection pool
+            if resolved_state[:failover_connection_pool] != nil do
+              {:reply, :ok, publish_to_failover(resolved_state, exchange, queue, payload)}
+            else
+              {:reply, {:error, "Unable to publish to queue on the AMQP broker because no channel was found"}, resolved_state}        
+            end
+          {channel_id, resolved_state} ->
+            channel = resolved_state[:channels_info][:channels][channel_id]
+            Basic.publish(channel, exchange.name, queue.name, serilalize(payload), [:persistent])
+            {:reply, :ok, resolved_state}
+        end
       end
     rescue e in RuntimeError ->
       reason = "Failed to publish a msg to RabbitMQ: #{inspect e}"
       Logger.error(reason)
       {:reply, {:error, reason}, state}
     end
+  end
+
+  @doc false
+  # Method to publish to the failover connection pool
+  #
+  ## Options
+  # The `exchange` option represents the AMQP exchange
+  #
+  # The `queue` option represents the AMQP queue
+  #
+  # The `payload` option represents the message data
+  #
+  ## Return Value
+  #
+  # updated state
+  #
+  @spec publish_to_failover(term, String.t(), term, term) :: term
+  defp publish_to_failover(state, exchange, queue, payload) do    
+    Logger.debug("Rerouting publishing request to failover connection pool...")
+    CloudOS.Messaging.AMQP.ConnectionPool.publish(state[:failover_connection_pool], exchange, queue, payload)
+    state
   end
 
   @doc """
@@ -231,15 +265,45 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   @spec handle_call({:subscribe, String.t(), String.t(), term}, term, term) :: {:reply, term, term}
   def handle_call({:subscribe, exchange, queue, callback_handler}, _from, state) do
     Logger.debug("Subscribing to exchange #{exchange.name}, queue #{queue.name}...")
-    case get_channel(state) do
-      {nil, resolved_state} -> 
-        Logger.debug("Unable to subscribe, no channel was found!")
-        {:reply, {:error, "Unable to subsribe to queue on the AMQP broker because no channel was found"}, resolved_state}        
-      {channel_id, resolved_state} ->
-        Logger.debug("Using channel #{channel_id}...")
-        resolved_state = subscribe_to_queue(resolved_state, channel_id, exchange, queue, callback_handler)
-        {:reply, :ok, resolved_state}
+    if state[:failover_connection_pool] != nil do
+      {:reply, :ok, subscribe_to_failover(state, exchange, queue, callback_handler)}
+    else
+      case get_channel(state) do
+        {nil, resolved_state} -> 
+          #get_channel can create the failover connection pool
+          if resolved_state[:failover_connection_pool] != nil do
+            {:reply, :ok, subscribe_to_failover(resolved_state, exchange, queue, callback_handler)}
+          else
+             {:reply, {:error, "Unable to subsribe to queue on the AMQP broker because no channel was found"}, resolved_state}        
+          end
+        {channel_id, resolved_state} ->
+          Logger.debug("Using channel #{channel_id}...")
+          resolved_state = subscribe_to_queue(resolved_state, channel_id, exchange, queue, callback_handler)
+          {:reply, :ok, resolved_state}
+      end
     end
+  end
+
+  @doc false
+  # Method to subscribe to the failover connection pool
+  #
+  ## Options
+  # The `exchange` option represents the AMQP exchange
+  #
+  # The `queue` option represents the AMQP queue
+  #
+  # The `callback_handler` option represents the method that should be called when a message is received.  The handler
+  # should be a function with 2 arguments.
+  #
+  ## Return Value
+  #
+  # updated state
+  #
+  @spec subscribe_to_failover(term, String.t(), term, term) :: term
+  defp subscribe_to_failover(state, exchange, queue, callback_handler) do    
+    Logger.debug("Rerouting subscribe request to failover connection pool...")
+    CloudOS.Messaging.AMQP.ConnectionPool.subscribe(state[:failover_connection_pool], exchange, queue, callback_handler)
+    state
   end
 
   @doc """
@@ -353,14 +417,13 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   def restart_connection(state, connection_url, retry_cnt) do
     if retry_cnt <= 0 do
       Logger.error("Failed to restart the connection to #{state[:connection_options][:host]}; no more retries available...")
-      state
+      failover_connection(state, connection_url)
     else
       Logger.info("Attempting to restart the connection to #{state[:connection_options][:host]}; (remaining retries #{retry_cnt})...")
       old_channel_ids = state[:connections_info][:channels_for_connections][connection_url]
       if old_channel_ids == nil do
         old_channel_ids = []
       end
-      old_channel_ids = old_channel_ids
       connections_info = Map.put(state[:connections_info], :channels_for_connections, Map.put(state[:connections_info][:channels_for_connections], connection_url, []))
       resolved_state = Map.put(state, :connections_info, connections_info)
 
@@ -376,6 +439,99 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
         end
       end
     end
+  end
+
+  @doc """
+  Method to connect to a configured failover AMQP broker/exchange
+
+  ## Options
+
+  The `state` option defines the state of the server
+
+  The `old_connection_url` option represents the URL of the AMQP connection
+
+  ## Return Values
+
+  :ok | {:error, reason}
+  """  
+  @spec failover_connection(term, String.t()) :: :ok | {:error, String.t()}
+  def failover_connection(state, old_connection_url) do
+    failover_options = get_failover_options(state[:connection_options])
+    cond do
+      state[:failover_connection_pool] -> 
+        Logger.error("Unable to failover - connection has already been failed over")
+        state
+      failover_options == nil || length(failover_options) == 0 ->
+        Logger.error("Failed to connect to failover exchange - no failover connection options have been configured!")
+        state
+      true ->
+        Logger.info("Attempting to connect to failover exchange on host #{failover_options[:host]}...")
+        failover_connection_pool = ConnectionPools.get_pool(failover_options)
+        if failover_connection_pool == nil do
+          Logger.error("Unable to connect to failover host #{failover_options[:host]}!")
+          state
+        else
+          #re-register subscribers
+          old_channel_ids = state[:connections_info][:channels_for_connections][old_connection_url]
+          if old_channel_ids != nil && length(old_channel_ids) > 0 do
+            Enum.reduce old_channel_ids, state, fn (old_channel_id, state) ->
+              Logger.debug("Migrating subscribers to failover connection pool...")
+              queues_for_channel = state[:channels_info][:queues_for_channel][old_channel_id]
+              if queues_for_channel != nil do
+                {result, reason} = Enum.reduce queues_for_channel, {:ok, nil}, fn (queue_info, {result, reason}) ->
+                  if result == :ok do
+                    case ConnectionPool.subscribe(failover_connection_pool, queue_info[:exchange], queue_info[:queue], queue_info[:callback_handler]) do
+                      :ok -> {result, reason}
+                      {:error, reason} -> {:error, reason}
+                    end
+                  end
+                end
+
+                if result != :ok do
+                  Logger.error("An error occurred migrating subscribers to the failover connection:  #{inspect reason}")
+                else
+                  Logger.debug("Successfully migrated subscribers to the failover connection")
+                end
+              end
+            end
+          end
+          Map.put(state, :failover_connection_pool, failover_connection_pool)
+        end
+    end
+  end
+
+  @doc """
+  Method to retrieve the implementation-specific failover options (implementation)
+
+  ## Options
+
+  The `options` option containing options map
+
+  ## Return Values
+
+  The implementation-specific options term
+  """
+  @spec get_failover_options(any) :: term
+  defp get_failover_options(options) do
+    failover_options = []
+
+    if options[:failover_username] != nil do
+      failover_options = failover_options ++ [failover_username: options[:failover_username]]
+    end
+
+    if options[:failover_password] != nil do
+      failover_options = failover_options ++ [failover_password: options[:failover_password]]
+    end    
+
+    if options[:failover_host] != nil do
+      failover_options = failover_options ++ [failover_host: options[:failover_host]]
+    end 
+
+    if options[:failover_virtual_host] != nil do
+      failover_options = failover_options ++ [failover_virtual_host: options[:failover_virtual_host]]
+    end 
+
+    failover_options
   end
 
   @doc """
@@ -564,7 +720,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
 
   ## Return Values
 
-  {channel_id, state} | {nil, state}
+  {connection_url, state} | {nil, state}
   """  
   @spec get_connection(term) :: {term, term}
   def get_connection(state) do   
@@ -602,8 +758,8 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
 
       {connection_url, resolved_state}
     else
-      Logger.error("No connections were established!")
-      {nil, resolved_state}
+      Logger.error("Failed to connect to the exchange!")
+      {nil, failover_connection(state, "")}
     end
   end
 

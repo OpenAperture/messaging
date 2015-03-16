@@ -34,7 +34,6 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolsTest do
     result = ConnectionPools.get_pool([
       connection_url: url
       ])
-
     assert is_pid result
 
     result2 = ConnectionPools.get_pool([
@@ -42,7 +41,6 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolsTest do
       ])
 
     assert is_pid result2
-
     assert result == result2
   end
 end

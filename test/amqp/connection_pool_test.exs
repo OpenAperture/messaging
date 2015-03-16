@@ -10,6 +10,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   alias AMQP.Queue
 
   alias CloudOS.Messaging.AMQP.ConnectionPool
+  alias CloudOS.Messaging.AMQP.ConnectionPools
 
   alias CloudOS.Messaging.Queue, as: MessagingQueue
   alias CloudOS.Messaging.AMQP.Exchange, as: MessagingExchange
@@ -1592,5 +1593,172 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   after
     :meck.unload(Connection)
     :meck.unload(GenEvent)
+  end
+
+  # =============================
+  # failover_connection tests
+
+  test "failover_connection - no options does not alter state" do
+    state = %{}
+    old_connection_url = ""
+
+    returned_state = ConnectionPool.failover_connection(state, old_connection_url)
+    assert returned_state == state
+  end
+
+  test "failover_connection - empty options does not alter state" do
+    state = %{
+      connection_options: %{}
+    }
+    old_connection_url = ""
+
+    returned_state = ConnectionPool.failover_connection(state, old_connection_url)
+    assert returned_state == state
+  end
+
+  test "failover_connection - already in failover state" do
+    state = %{
+      failover_connection_pool: %{}
+    }
+    old_connection_url = ""
+
+    returned_state = ConnectionPool.failover_connection(state, old_connection_url)
+    assert returned_state == state
+  end
+
+  test "failover_connection - create a new connection, no migration of subscribers" do
+    :meck.new(ConnectionPools, [:passthrough])
+    :meck.expect(ConnectionPools, :get_pool, fn opt -> %{} end)
+
+    state = %{
+      connection_options: %{
+        failover_username: "user",
+        failover_password: "pass",
+        failover_host: "host",
+        failover_virtual_host: "vhost"
+      }
+    }
+    old_connection_url = ""
+
+    returned_state = ConnectionPool.failover_connection(state, old_connection_url)
+    assert returned_state[:failover_connection_pool] != nil
+  after
+    :meck.unload(ConnectionPools)
+  end
+  
+  test "failover_connection - create a new connection, migration of subscribers" do
+    :meck.new(ConnectionPools, [:passthrough])
+    :meck.expect(ConnectionPools, :get_pool, fn opt -> %{} end)
+
+    :meck.new(ConnectionPool, [:passthrough])
+    :meck.expect(ConnectionPool, :subscribe, fn _, _, _, _ -> :ok end)
+
+    channels_info = %{
+      channels: %{},
+      channel_connections: %{},
+      queues_for_channel: %{
+        "123abc": %{
+          exchange: %{},
+          queue: %{},
+          callback_handler: %{}
+        }
+        },
+      refs: HashDict.new      
+    }
+    state = %{
+      connection_options: %{
+        failover_username: "user",
+        failover_password: "pass",
+        failover_host: "host",
+        failover_virtual_host: "vhost"
+      },
+      channels_info: channels_info
+    }
+    old_connection_url = ""
+
+    returned_state = ConnectionPool.failover_connection(state, old_connection_url)
+    assert returned_state[:failover_connection_pool] != nil
+  after
+    :meck.unload(ConnectionPools)
+    :meck.unload(ConnectionPool)
+  end  
+
+  test "failover_connection - create a new connection, migration has error" do
+    :meck.new(ConnectionPools, [:passthrough])
+    :meck.expect(ConnectionPools, :get_pool, fn opt -> %{} end)
+
+    :meck.new(ConnectionPool, [:passthrough])
+    :meck.expect(ConnectionPool, :subscribe, fn _, _, _, _ -> {:error, "bad news bears"} end)
+
+    channels_info = %{
+      channels: %{},
+      channel_connections: %{},
+      queues_for_channel: %{
+        "123abc": %{
+          exchange: %{},
+          queue: %{},
+          callback_handler: %{}
+        }
+        },
+      refs: HashDict.new      
+    }
+    state = %{
+      connection_options: %{
+        failover_username: "user",
+        failover_password: "pass",
+        failover_host: "host",
+        failover_virtual_host: "vhost"
+      },
+      channels_info: channels_info
+    }
+    old_connection_url = ""
+
+    returned_state = ConnectionPool.failover_connection(state, old_connection_url)
+    assert returned_state[:failover_connection_pool] != nil
+  after
+    :meck.unload(ConnectionPools)
+    :meck.unload(ConnectionPool)
+  end
+
+  test "restart_channel - flip to failover" do
+    :meck.new(ConnectionPools, [:passthrough])
+    :meck.expect(ConnectionPools, :get_pool, fn opt -> %{} end)
+
+    :meck.new(ConnectionPool, [:passthrough])
+    :meck.expect(ConnectionPool, :subscribe, fn _, _, _, _ -> :ok end)
+
+    connections_info = %{
+      connections: %{},
+      channels_for_connections: %{},
+      refs: HashDict.new
+    }
+
+    channels_info = %{
+      channels: %{},
+      channel_connections: %{},
+      queues_for_channel: %{},
+      refs: HashDict.new      
+    }
+    connection_url = "amqp:rabbithost"
+    state = %{
+      connection_options: [
+        host: "rabbithost",
+        connection_url: connection_url,
+        failover_username: "user",
+        failover_password: "pass",
+        failover_host: "host",
+        failover_virtual_host: "vhost"
+        ],
+      max_connection_cnt: 1,
+      connections_info: connections_info, 
+      channels_info: channels_info      
+    }
+
+    result_state = ConnectionPool.restart_connection(state, connection_url, 0)
+    assert result_state != nil
+    assert result_state[:failover_connection_pool] != nil
+  after
+    :meck.unload(ConnectionPools)
+    :meck.unload(ConnectionPool)
   end
 end

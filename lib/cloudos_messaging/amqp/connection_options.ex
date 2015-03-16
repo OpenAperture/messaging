@@ -9,7 +9,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionOptions do
   This module contains the struct definition for AMQP connection options
   """
 
-	defstruct username: nil, password: nil, host: nil, virtual_host: nil
+	defstruct username: nil, password: nil, host: nil, virtual_host: nil, failover_username: nil, failover_password: nil, failover_host: nil, failover_virtual_host: nil
 
 	defimpl CloudOS.Messaging.ConnectionOptions, for: CloudOS.Messaging.AMQP.ConnectionOptions do
 
@@ -48,6 +48,31 @@ defmodule CloudOS.Messaging.AMQP.ConnectionOptions do
 				host: options.host,
 				virtual_host: options.virtual_host
 			]	  
+		end
+
+	  @doc """
+	  Method to retrieve the implementation-specific connection URL
+
+	  ## Options
+
+	  The `options` option containing options struct
+
+	  ## Return Values
+
+	  String
+	  """
+	  @spec get_connection_url(any) :: String
+		def get_connection_url(options) do
+			case Keyword.get(options, :connection_url, nil) do
+	      nil ->
+	        #build a url:  amqp://user:pass@host/vhost
+	        user = Keyword.get(options, :username, "")
+	        password = Keyword.get(options, :password, "")
+	        host = Keyword.get(options, :host, "")
+	        virtual_host = Keyword.get(options, :virtual_host, "")
+	        "amqp://#{user}:#{password}@#{host}/#{virtual_host}"
+	      connection_url -> connection_url			
+	    end
 		end
 	end
 end

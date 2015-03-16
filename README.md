@@ -2,7 +2,7 @@
 
 This reusable Elixir messaging library provides abstracted methods for interacting with the CloudOS Messaging system.  
 
-Currently this library utlizes an AMQP client as its primary communication mechanism.  However, it add supervision and reconnection logic for Connections and Channels.
+Currently this library utlizes an AMQP client as its primary communication mechanism.  However, it add supervision and reconnection and failover logic for Connections and Channels.
 
 ## Usage
 
@@ -20,7 +20,7 @@ subscribe(connection_options \\ @connection_options, queue, callback_handler)
 
 The `subscribe` method allows a consumer to receive messages from the messaging system.  The provides 2/3 arguments, depending on the usage pattern:
 
-* connection_options - CloudOS.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  Defaults to the @connection_options attribute.
+* connection_options - CloudOS.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
 
 * queue - CloudOS.Messaging.Queue struct, containing the queue (and possibly exchange) information
 
@@ -35,7 +35,7 @@ publish(connection_options \\ @connection_options, queue, payload)
 
 The `publish` method allows a consumer to push messages into the messaging system.  The provides 2/3 arguments, depending on the usage pattern:
 
-* connection_options - CloudOS.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  Defaults to the @connection_options attribute.
+* connection_options - CloudOS.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
 
 * queue - CloudOS.Messaging.Queue struct, containing the queue (and possibly exchange) information
 
@@ -62,7 +62,11 @@ defmodule CloudOS.Messaging.AMQP.TestConsumer do
 		username: Application.get_env(:cloudos_amqp, :username),
 		password: Application.get_env(:cloudos_amqp, :password),
 		virtual_host: Application.get_env(:cloudos_amqp, :virtual_host),
-		host: Application.get_env(:cloudos_amqp, :host)
+		host: Application.get_env(:cloudos_amqp, :host),
+		failover_username: Application.get_env(:cloudos_amqp, :failover_username),
+		failover_password: Application.get_env(:cloudos_amqp, :failover_password),
+		failover_virtual_host: Application.get_env(:cloudos_amqp, :failover_virtual_host),
+		failover_host: Application.get_env(:cloudos_amqp, :failover_host)
 	}
 
 	use CloudOS.Messaging
@@ -128,7 +132,11 @@ defmodule CloudOS.Messaging.AMQP.TestConsumer2 do
 			username: Application.get_env(:cloudos_amqp, :username),
 			password: Application.get_env(:cloudos_amqp, :password),
 			virtual_host: Application.get_env(:cloudos_amqp, :virtual_host),
-			host: Application.get_env(:cloudos_amqp, :host)
+			host: Application.get_env(:cloudos_amqp, :host),
+			failover_username: Application.get_env(:cloudos_amqp, :failover_username),
+			failover_password: Application.get_env(:cloudos_amqp, :failover_password),
+			failover_virtual_host: Application.get_env(:cloudos_amqp, :failover_virtual_host),
+			failover_host: Application.get_env(:cloudos_amqp, :failover_host)
 		}
 
 		case subscribe(options, @queue, fn(payload, _meta) -> handle_msg(payload, _meta) end) do
