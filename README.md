@@ -6,7 +6,7 @@ Currently this library utlizes an AMQP client as its primary communication mecha
 
 ## Usage
 
-The messaging component is defined via the "using" macro, and can be included in other modules.  
+The messaging component is defined via the "using" macro, and can be included in other modules.  Remember to add the :cloudos_messaging application to your Elixir application or module.
 
 ### Methods
 
