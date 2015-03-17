@@ -10,7 +10,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPools do
   use GenServer
 
   alias CloudOS.Messaging.AMQP.ConnectionPool
-  alias CloudOS.Messaging.AMQP.ConnectionOptions
+  alias CloudOS.Messaging.AMQP.ConnectionOptions, as: AMQPConnectionOptions
 
   @moduledoc """
   This module contains the GenServer for managing getting ConnectionPools
@@ -82,7 +82,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPools do
     connection_options = if connection_options[:connection_url] != nil do
       connection_options
     else
-      connection_url = ConnectionOptions.get_connection_url(connection_options)
+      connection_url = AMQPConnectionOptions.get_connection_url(connection_options)
       Keyword.update(connection_options, :connection_url, connection_url, fn(_) -> connection_url end)      
     end
     connection_url = Keyword.get(connection_options, :connection_url)

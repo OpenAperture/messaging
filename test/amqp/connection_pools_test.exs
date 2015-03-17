@@ -43,4 +43,41 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolsTest do
     assert is_pid result2
     assert result == result2
   end
+
+  test "get_pool via options" do
+    {result, pid} = ConnectionPools.create()
+
+    url = "#{UUID.uuid1()}"
+    result = ConnectionPools.get_pool([
+      username: "user",
+      password: "pass",
+      host: url,
+      virtual_host: "vhost"
+      ])
+
+    assert is_pid result
+  end
+
+  test "get_pool via options - retrieve same connection pool" do
+    {result, pid} = ConnectionPools.create()
+
+    url = "#{UUID.uuid1()}"
+    result = ConnectionPools.get_pool([
+      username: "user",
+      password: "pass",
+      host: url,
+      virtual_host: "vhost"
+      ])
+    assert is_pid result
+
+    result2 = ConnectionPools.get_pool([
+      username: "user",
+      password: "pass",
+      host: url,
+      virtual_host: "vhost"
+      ])
+
+    assert is_pid result2
+    assert result == result2
+  end
 end
