@@ -8,6 +8,38 @@ Currently this library utlizes an AMQP client as its primary communication mecha
 
 The messaging component is defined via the "using" macro, and can be included in other modules.  Remember to add the :cloudos_messaging application to your Elixir application or module.
 
+### Connection Options
+
+#### AMQP Connections
+
+When connecting to an AMQP broker, such as RabbitMQ, you are required to specify the following parameters:
+
+```iex
+%CloudOS.Messaging.AMQP.ConnectionOptions{
+  username: "user",
+  password: "pass",
+  virtual_host: "vhost",
+  host: "host"
+    }
+```
+
+You may also specify failover broker connection parameters:
+
+```iex
+%CloudOS.Messaging.AMQP.ConnectionOptions{
+  failover_username: "user2",
+  failover_password: "pass",
+  failover_virtual_host: "vhost",
+  failover_host: "host2"
+    }
+```
+
+When specifying a failover connection, make sure to also specify the failover exchange (make sure to specify the name, even if it is the same):
+
+```iex
+%CloudOS.Messaging.AMQP.Exchange{name: "exchange-name", failover_name: "failover-exchange-name"), options: [:durable]}
+```
+
 ### Methods
 
 There are two methods currently exposed via the macro:

@@ -13,6 +13,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
 
   alias CloudOS.Messaging.ConnectionOptions
   alias CloudOS.Messaging.AMQP.ConnectionPools
+  alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
 
   @moduledoc """
   This module contains the GenServer for a specific connection pool, which manages all connections to the AMQP host
@@ -239,7 +240,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   @spec publish_to_failover(term, String.t(), term, term) :: term
   defp publish_to_failover(state, exchange, queue, payload) do    
     Logger.debug("Rerouting publishing request to failover connection pool...")
-    CloudOS.Messaging.AMQP.ConnectionPool.publish(state[:failover_connection_pool], exchange, queue, payload)
+    CloudOS.Messaging.AMQP.ConnectionPool.publish(state[:failover_connection_pool], AMQPExchange.get_failover(exchange), queue, payload)
     state
   end
 
@@ -302,7 +303,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   @spec subscribe_to_failover(term, String.t(), term, term) :: term
   defp subscribe_to_failover(state, exchange, queue, callback_handler) do    
     Logger.debug("Rerouting subscribe request to failover connection pool...")
-    CloudOS.Messaging.AMQP.ConnectionPool.subscribe(state[:failover_connection_pool], exchange, queue, callback_handler)
+    CloudOS.Messaging.AMQP.ConnectionPool.subscribe(state[:failover_connection_pool], AMQPExchange.get_failover(exchange), queue, callback_handler)
     state
   end
 
