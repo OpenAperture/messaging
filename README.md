@@ -58,6 +58,7 @@ The `subscribe` method allows a consumer to receive messages from the messaging 
 
 * callback_handler - A 2-argument function, which receives message in the form of (payload, metadata)
 
+When receiving messages from a queue, consumers should take an Elixir mindset of "let is fail".  This module provides some basic requeueing logic that will attempt to requeue the message for another subscriber, in the event an exception is thrown from a callback handler (this behavior can be disabled by setting the requeue_on_error property on a Queue to false).  If exceptions are generated meaning that no consumer can possibly process this message, the consumer should catch these exception and return normally, which will permanently remove the message from the queue.
 
 #### Publish
 

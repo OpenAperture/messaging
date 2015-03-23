@@ -1761,4 +1761,118 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(ConnectionPools)
     :meck.unload(ConnectionPool)
   end
+
+  # =======================================
+  # subscribe_callback tests
+
+  test "subscribe_callback - process success" do
+    queue = %MessagingQueue{
+      name: "test_queue", 
+      exchange: %MessagingExchange{name: "aws:us-east-1b", options: [:durable]},
+      error_queue: "test_queue_error",
+      options: [durable: true, arguments: [{"x-dead-letter-exchange", :longstr, ""},{"x-dead-letter-routing-key", :longstr, "test_queue_error"}]],
+      binding_options: [routing_key: "test_queue"]
+    }
+
+    meta = %{
+      delivery_tag: "123abc",
+      redelivered: false
+    }
+
+    callback_handler = fn(payload, meta) ->
+      :ok
+    end
+
+    payload = :erlang.term_to_binary("{}")
+
+    ConnectionPool.subscribe_callback("channel", queue, callback_handler, payload, meta)
+  end  
+
+  test "subscribe_callback - requeue success" do
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :reject, fn _, _, opts -> 
+      assert opts[:requeue] == true
+      :ok 
+    end)
+
+    queue = %MessagingQueue{
+      name: "test_queue", 
+      exchange: %MessagingExchange{name: "aws:us-east-1b", options: [:durable]},
+      error_queue: "test_queue_error",
+      options: [durable: true, arguments: [{"x-dead-letter-exchange", :longstr, ""},{"x-dead-letter-routing-key", :longstr, "test_queue_error"}]],
+      binding_options: [routing_key: "test_queue"]
+    }
+
+    meta = %{
+      delivery_tag: "123abc",
+      redelivered: false
+    }
+
+    callback_handler = fn(payload, meta) ->
+      raise "bad news bears"
+    end
+
+    payload = :erlang.term_to_binary("{}")
+
+    ConnectionPool.subscribe_callback("channel", queue, callback_handler, payload, meta)
+  after
+    :meck.unload(Basic)
+  end
+
+  test "subscribe_callback - requeue failure" do
+    queue = %MessagingQueue{
+      name: "test_queue", 
+      exchange: %MessagingExchange{name: "aws:us-east-1b", options: [:durable]},
+      error_queue: "test_queue_error",
+      options: [durable: true, arguments: [{"x-dead-letter-exchange", :longstr, ""},{"x-dead-letter-routing-key", :longstr, "test_queue_error"}]],
+      binding_options: [routing_key: "test_queue"]
+    }
+
+    meta = %{
+      delivery_tag: "123abc",
+      redelivered: true
+    }
+
+    callback_handler = fn(payload, meta) ->
+      raise "bad news bears"
+    end
+
+    payload = :erlang.term_to_binary("{}")
+
+    try do
+      ConnectionPool.subscribe_callback("channel", queue, callback_handler, payload, meta)
+      assert true == false
+    rescue exception ->
+      assert exception != nil
+    end
+  end  
+
+  test "subscribe_callback - requeue disabled" do
+    queue = %MessagingQueue{
+      name: "test_queue", 
+      requeue_on_error: false,
+      exchange: %MessagingExchange{name: "aws:us-east-1b", options: [:durable]},
+      error_queue: "test_queue_error",
+      options: [durable: true, arguments: [{"x-dead-letter-exchange", :longstr, ""},{"x-dead-letter-routing-key", :longstr, "test_queue_error"}]],
+      binding_options: [routing_key: "test_queue"]
+    }
+
+    meta = %{
+      delivery_tag: "123abc",
+      redelivered: false
+    }
+
+    callback_handler = fn(payload, meta) ->
+      raise "bad news bears"
+    end
+
+    payload = :erlang.term_to_binary("{}")
+
+    try do
+      ConnectionPool.subscribe_callback("channel", queue, callback_handler, payload, meta)
+      assert true == false
+    rescue exception ->
+      assert exception != nil
+    end
+  end  
 end

@@ -9,5 +9,5 @@ defmodule CloudOS.Messaging.Queue do
   This module contains definition for an AMQP queue
   """  
 
-	defstruct name: "", exchange: %CloudOS.Messaging.AMQP.Exchange{name: nil, type: :direct, options: [:durable]}, error_queue: "", options: [], binding_options: []
+	defstruct name: "", requeue_on_error: true, exchange: %CloudOS.Messaging.AMQP.Exchange{name: nil, type: :direct, options: [:durable]}, error_queue: "", options: [], binding_options: []
 end

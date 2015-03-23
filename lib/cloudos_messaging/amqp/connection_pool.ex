@@ -627,8 +627,11 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
     Queue.declare(channel, queue.name, queue.options)
 
     Queue.bind(channel, queue.name, exchange.name, queue.binding_options)
-    Queue.subscribe(channel, queue.name, fn payload, _meta ->
-      payload |> deserialize |> callback_handler.(_meta)
+    #Queue.subscribe(channel, queue.name, fn payload, _meta ->
+    #  payload |> deserialize |> callback_handler.(_meta)
+    #end)
+    Queue.subscribe(channel, queue.name, fn payload, meta ->
+      subscribe_callback(channel, queue, callback_handler, payload, meta)
     end)
 
     queues_for_channel = state[:channels_info][:queues_for_channel][channel_id]
@@ -640,6 +643,41 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
     queues = Map.put(state[:channels_info][:queues_for_channel], channel_id, queues_for_channel)
     channels_info = Map.put(state[:channels_info], :queues_for_channel, queues)
     Map.put(state, :channels_info, channels_info)
+  end
+
+  @doc false
+  # Method to add support for requeueing failed messages 
+  # (this functionality was removed in version AQMP version 0.1.0 https://github.com/pma/amqp/blob/v0.0.6/lib/amqp/queue.ex#L147)
+  #
+  ## Options
+  # The `channel` option represents string channel name
+  #
+  # The `queue` option represents the AMQP queue struct
+  #
+  # The `callback_handler` option represents the method that should be called when a message is received.  The handler
+  # should be a function with 2 arguments.   
+  # 
+  # The `payload` option represents the message data
+  #
+  # The `meta` option refers to the AMQP metadata associated with the message
+  #
+  @spec subscribe_callback(String.t(), term, term, term, term) :: term
+  def subscribe_callback(channel, queue, callback_handler, payload, %{delivery_tag: delivery_tag, redelivered: redelivered} = meta) do
+    try do
+      payload 
+      |> deserialize 
+      |> callback_handler.(meta)
+    rescue exception ->
+      if queue.requeue_on_error == true && redelivered == false do
+        Logger.debug("An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}.  Requeueing message...")
+        Basic.reject(channel, delivery_tag, requeue: not redelivered)
+      else
+        Logger.error("An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}")
+        #let AMQP.Queue fail the message
+        stacktrace = System.stacktrace
+        reraise exception, stacktrace
+      end
+    end
   end
 
   @doc """

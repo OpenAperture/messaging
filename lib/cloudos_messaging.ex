@@ -96,7 +96,7 @@ defmodule CloudOS.Messaging do
 		  """
 		  @spec subscribe(term, term, term) :: :ok | {:error, String.t()} 
 			def subscribe(connection_options \\ @connection_options, queue, callback_handler) when is_function(callback_handler, 2) do
-				case ConnectionOptions.type(connection_options) do
+        case ConnectionOptions.type(connection_options) do
 					nil -> {:error, "The queue does not have a type defined!"}
 					:amqp ->
 						Logger.debug("Retrieving connection pool for #{connection_options.host}...")
