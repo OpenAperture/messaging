@@ -40,6 +40,24 @@ When specifying a failover connection, make sure to also specify the failover ex
 %CloudOS.Messaging.AMQP.Exchange{name: "exchange-name", failover_name: "failover-exchange-name"), options: [:durable]}
 ```
 
+#### Dynamic Options Resolution
+
+Managing sets of connection options can be complicated.  This library provides a component to help resolve the appropriate connection options:  CloudOS.Messaging.ConnectionOptionsResolver.
+
+The ConnectionOptionsResolver provides 2 methods to retrieve connections (you must provide a CloudOS.ManagerAPI (api param) with your own server connection information):
+
+* Retrieve connection options for a specific broker
+
+```iex
+CloudOS.Messaging.ConnectionOptionsResolver.get_for_broker(api, broker_id)
+```
+
+* Resolve the connection options between a set of exchanges (and  broker)
+
+```iex
+CloudOS.Messaging.ConnectionOptionsResolver.resolve(api, src_broker_id, src_exchange_id, dest_exchange_id)
+```
+
 ### Methods
 
 There are two methods currently exposed via the macro:

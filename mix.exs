@@ -16,7 +16,7 @@ defmodule CloudOS.Messaging.Mixfile do
   def application do
     [
       mod: { CloudOS.Messaging, [] },
-      applications: [:logger]
+      applications: [:logger, :cloudos_manager_api]
     ]
   end
 
@@ -32,9 +32,12 @@ defmodule CloudOS.Messaging.Mixfile do
   defp deps do
     [
       {:amqp, "0.1.0"},
-      {:uuid, "~> 0.1.5" },      
+      {:uuid, "~> 0.1.5" },
+
+      {:cloudos_manager_api, git: "git@github.com:UmbrellaCorporation-SecretProjectLab/cloudos_manager_api.git", ref: "2c9d20d705dc94580699f56c539dbf64746ffaf5"},
 
       #test dependencies
+      {:exvcr, github: "parroty/exvcr"},
       {:meck, "0.8.2"}
     ]
   end

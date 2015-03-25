@@ -54,7 +54,8 @@ defmodule CloudOS.Messaging do
 
     children = [
       # Define workers and child supervisors to be supervised
-      supervisor(CloudOS.Messaging.AMQP.ConnectionSupervisor, [])
+      supervisor(CloudOS.Messaging.AMQP.ConnectionSupervisor, []),
+      worker(CloudOS.Messaging.ConnectionOptionsResolver, [])
     ]
 
     opts = [strategy: :one_for_one, name: CloudosBuildServer.Supervisor]
@@ -77,6 +78,8 @@ defmodule CloudOS.Messaging do
       alias CloudOS.Messaging.Queue
       alias CloudOS.Messaging.AMQP.ConnectionPools
 			alias CloudOS.Messaging.AMQP.ConnectionPool
+
+      
 
 		  @doc """
 		  Subscribes to a specific queue within the Messaging system
@@ -141,7 +144,7 @@ defmodule CloudOS.Messaging do
 						end
 					_ -> {:error, "Queue type #{inspect queue.type} is unknown!"}
 				end
-		  end		
+		  end
     end
   end
 end

@@ -1,0 +1,28 @@
+[
+  {
+    "request": {
+      "body": "",
+      "headers": {
+        "Accept": "application/json",
+        "User-Agent": "cloudos-manager-api"
+      },
+      "method": "get",
+      "options": {
+        "connect_timeout": 5000
+      },
+      "url": "https://cloudos-mgr.host.co/messaging/exchanges/1/brokers"
+    },
+    "response": {
+      "body": "[{\"id\": 1,\"name\": \"test\"},{\"id\": 2,\"name\": \"test2\"}]",
+      "headers": {
+        "Content-Type": "application/json",
+        "Content-Length": "-1",
+        "Connection": "keep-alive"
+      },
+      "status_code": ["HTTP/1.1", 200, "OK"],
+      "type": "ok"
+    }
+  }
+]
+
+
