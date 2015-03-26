@@ -14,6 +14,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   alias CloudOS.Messaging.ConnectionOptions
   alias CloudOS.Messaging.AMQP.ConnectionPools
   alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
+  alias CloudOS.Messaging.AMQP.SubscriptionHandler
 
   @moduledoc """
   This module contains the GenServer for a specific connection pool, which manages all connections to the AMQP host
@@ -79,14 +80,14 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   The `queue_name` option represents the AMQP queue
 
   The `callback_handler` option represents the method that should be called when a message is received.  The handler
-  should be a function with 2 arguments.
+  should be a function with 2 arguments (sync) or 3 arguments (async).
 
   ## Return Values
 
   :ok | {:error, reason}
   """
   @spec subscribe(pid, String.t(), String.t(), term) :: :ok | {:error, String.t()}
-  def subscribe(connection_pool, exchange, queue, callback_handler) when is_function(callback_handler, 2) do
+  def subscribe(connection_pool, exchange, queue, callback_handler) do
     GenServer.call(connection_pool, {:subscribe, exchange, queue, callback_handler})
   end
 
@@ -479,7 +480,8 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
               Logger.debug("Migrating subscribers to failover connection pool...")
               queues_for_channel = state[:channels_info][:queues_for_channel][old_channel_id]
               if queues_for_channel != nil do
-                {result, reason} = Enum.reduce queues_for_channel, {:ok, nil}, fn (queue_info, {result, reason}) ->
+                {result, reason} = Enum.reduce queues_for_channel, {:ok, nil}, fn (subscription_handler, {result, reason}) ->
+                  queue_info = SubscriptionHandler.get_subscription_options(subscription_handler)
                   if result == :ok do
                     case ConnectionPool.subscribe(failover_connection_pool, queue_info[:exchange], queue_info[:queue], queue_info[:callback_handler]) do
                       :ok -> {result, reason}
@@ -568,7 +570,8 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
         #re-register subscribers
         queues_for_channel = resolved_state[:channels_info][:queues_for_channel][old_channel_id]
         resolved_state = if queues_for_channel != nil do
-          resolved_state = Enum.reduce queues_for_channel, resolved_state, fn (queue_info, resolved_state) ->
+          resolved_state = Enum.reduce queues_for_channel, resolved_state, fn (subscription_handler, resolved_state) ->
+            queue_info = SubscriptionHandler.get_subscription_options(subscription_handler)
             subscribe_to_queue(resolved_state, channel_id, queue_info[:exchange], queue_info[:queue], queue_info[:callback_handler])
           end
         else
@@ -621,63 +624,15 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
     Logger.debug("On channel #{channel_id}, subscribing to exchange #{exchange.name}, queue #{queue.name}, queue options #{inspect queue.options}, binding options #{inspect queue.binding_options}...")
 
     channel = state[:channels_info][:channels][channel_id]
-    Exchange.declare(channel, exchange.name, exchange.type, exchange.options)
-    
-    # Messages that cannot be delivered to any consumer in the main queue will be routed to the error queue
-    Queue.declare(channel, queue.name, queue.options)
-
-    Queue.bind(channel, queue.name, exchange.name, queue.binding_options)
-    #Queue.subscribe(channel, queue.name, fn payload, _meta ->
-    #  payload |> deserialize |> callback_handler.(_meta)
-    #end)
-    Queue.subscribe(channel, queue.name, fn payload, meta ->
-      subscribe_callback(channel, queue, callback_handler, payload, meta)
-    end)
-
+    subscription_handler = SubscriptionHandler.subscribe(%{channel: channel, exchange: exchange, queue: queue, callback_handler: callback_handler})
     queues_for_channel = state[:channels_info][:queues_for_channel][channel_id]
     if queues_for_channel == nil do
       queues_for_channel = []
     end
-    queues_for_channel = queues_for_channel ++ [%{exchange: exchange, queue: queue, callback_handler: callback_handler}]
-
+    queues_for_channel = queues_for_channel ++ [subscription_handler]
     queues = Map.put(state[:channels_info][:queues_for_channel], channel_id, queues_for_channel)
     channels_info = Map.put(state[:channels_info], :queues_for_channel, queues)
     Map.put(state, :channels_info, channels_info)
-  end
-
-  @doc false
-  # Method to add support for requeueing failed messages 
-  # (this functionality was removed in version AQMP version 0.1.0 https://github.com/pma/amqp/blob/v0.0.6/lib/amqp/queue.ex#L147)
-  #
-  ## Options
-  # The `channel` option represents string channel name
-  #
-  # The `queue` option represents the AMQP queue struct
-  #
-  # The `callback_handler` option represents the method that should be called when a message is received.  The handler
-  # should be a function with 2 arguments.   
-  # 
-  # The `payload` option represents the message data
-  #
-  # The `meta` option refers to the AMQP metadata associated with the message
-  #
-  @spec subscribe_callback(String.t(), term, term, term, term) :: term
-  def subscribe_callback(channel, queue, callback_handler, payload, %{delivery_tag: delivery_tag, redelivered: redelivered} = meta) do
-    try do
-      payload 
-      |> deserialize 
-      |> callback_handler.(meta)
-    rescue exception ->
-      if queue.requeue_on_error == true && redelivered == false do
-        Logger.debug("An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}.  Requeueing message...")
-        Basic.reject(channel, delivery_tag, requeue: not redelivered)
-      else
-        Logger.error("An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}")
-        #let AMQP.Queue fail the message
-        stacktrace = System.stacktrace
-        reraise exception, stacktrace
-      end
-    end
   end
 
   @doc """

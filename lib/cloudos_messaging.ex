@@ -79,10 +79,8 @@ defmodule CloudOS.Messaging do
       alias CloudOS.Messaging.AMQP.ConnectionPools
 			alias CloudOS.Messaging.AMQP.ConnectionPool
 
-      
-
 		  @doc """
-		  Subscribes to a specific queue within the Messaging system
+		  Subscribes to a specific queue within the Messaging system.
 
 		  ## Options
 
@@ -91,14 +89,14 @@ defmodule CloudOS.Messaging do
 		  The `queue` options value provides the Queue to which to subscribe
 
   		The `callback_handler` option represents the method that should be called when a message is received.  The handler
-  		should be a function with 2 arguments.
+  		should be a function with 2 arguments (sync), or 3 arguments (async).
 
 		  ## Returns
 
 		  :ok | {:error, reason}
 		  """
 		  @spec subscribe(term, term, term) :: :ok | {:error, String.t()} 
-			def subscribe(connection_options \\ @connection_options, queue, callback_handler) when is_function(callback_handler, 2) do
+			def subscribe(connection_options \\ @connection_options, queue, callback_handler) do
         case ConnectionOptions.type(connection_options) do
 					nil -> {:error, "The queue does not have a type defined!"}
 					:amqp ->
