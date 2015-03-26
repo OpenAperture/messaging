@@ -608,12 +608,12 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
 
   The `channel_id` option represents the ID of the AMQP channel
 
-  The `exchangee` option represents the AMQP exchange name
+  The `exchange` option represents the AMQP exchange name
 
   The `queue` option represents the AMQP queue name
 
   The `callback_handler` option represents the method that should be called when a message is received.  The handler
-  should be a function with 2 arguments.  
+  should be a function with 2 or 3arguments.  
 
   ## Return Values
 

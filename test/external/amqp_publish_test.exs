@@ -120,17 +120,23 @@ defmodule CloudOS.Messaging.AMQP.PublishTest do
   test "subscribe" do
   	CloudOS.Messaging.AMQP.ConnectionPools.start_link
 
-  	send_result = TestConsumerPub.send_message("hello world!")
-  	IO.puts("send_result:  #{inspect send_result}")
+		spawn_link fn -> publish_message(0, 99, "first") end
+		spawn_link fn -> publish_message(100, 199, "second") end
+		spawn_link fn -> publish_message(200, 299, "third") end
+		spawn_link fn -> publish_message(300, 399, "fourth") end
+
   	:timer.sleep(30000)
   end
 
-  test "subscribe2" do
-  	CloudOS.Messaging.AMQP.ConnectionPools.start_link
+  def publish_message(cur_idx, max_idx, identifier) do
+  	if cur_idx < max_idx do
+	  	send_result = TestConsumerPub.send_message("[#{identifier}][attribute]:  hello world #{cur_idx}!")
+	  	IO.puts("send_result:  #{inspect send_result}")   	
 
-  	send_result = TestConsumerPub2.send_message("hello world!")
-  	IO.puts("send_result:  #{inspect send_result}")
-
-  	:timer.sleep(30000)
-  end  
+	  	send_result = TestConsumerPub2.send_message("[#{identifier}][method]:  hello world #{cur_idx}!")
+	  	IO.puts("send_result:  #{inspect send_result}")	  	 		
+	  	publish_message(cur_idx+1, max_idx, identifier)
+	  	:timer.sleep(1000)
+  	end
+  end
 end

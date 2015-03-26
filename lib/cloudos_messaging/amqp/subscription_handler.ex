@@ -1,7 +1,7 @@
 #
-# == connection_pools.ex
+# == subscription_handler.ex
 #
-# This module contains the GenServer for managing getting ConnectionPools
+# This module contains the GenServer for managing subscription callbacks
 #
 require Logger
 
@@ -14,7 +14,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
   alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
 
   @doc """
-  Creation method for synchronous request handling
+  Creation method for subscription handlers
 
   ## Options
 
@@ -64,6 +64,8 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
   end
 
   def handle_call({:subscribe_sync}, _from, %{channel: channel, exchange: exchange, queue: queue, callback_handler: callback_handler} = state) do
+  	Logger.debug("Subscribing synchronously to exchange #{exchange.name}, queue #{queue.name}...")
+
   	Exchange.declare(channel, exchange.name, exchange.type, exchange.options)
 
 	  # Messages that cannot be delivered to any consumer in the main queue will be routed to the error queue
@@ -71,14 +73,17 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
 
 	  Queue.bind(channel, queue.name, exchange.name, queue.binding_options)
 
+	  subscription_handler = self()
 	  Queue.subscribe(channel, queue.name, fn payload, meta ->
-	    SubscriptionHandler.process_request(self(), payload, meta)
+	    CloudOS.Messaging.AMQP.SubscriptionHandler.process_request(subscription_handler, payload, meta)
 	  end)
 
 	  {:reply, :ok, state}
   end
 
   def handle_call({:subscribe_async}, _from, %{channel: channel, exchange: exchange, queue: queue, callback_handler: callback_handler} = state) do
+  	Logger.debug("Subscribing asynchronously to exchange #{exchange.name}, queue #{queue.name}...")
+
   	Exchange.declare(channel, exchange.name, exchange.type, exchange.options)
 
 	  # Messages that cannot be delivered to any consumer in the main queue will be routed to the error queue
@@ -87,8 +92,19 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
 	  Queue.bind(channel, queue.name, exchange.name, queue.binding_options)
 
 	  #link these processes together
-	  request_handler_pid = spawn_link fn -> start_async_handler(channel, callback_handler, self()) end
-    Basic.consume(channel, queue)
+	  subscription_handler = self()
+	  request_handler_pid = spawn_link fn -> 
+	  	Logger.debug("Attempting to establish connection (subscription handler #{inspect subscription_handler}, child #{inspect self()})...")
+	  	start_async_handler(channel, callback_handler, subscription_handler) 
+	  end
+
+	  try do
+	  	Logger.debug("Attempting to register connection #{inspect request_handler_pid} with the AMQP client...")
+    	Basic.consume(channel, queue.name, request_handler_pid)
+    	Logger.debug("Successfully registered connection #{inspect request_handler_pid} with the AMQP client")
+	  rescue e ->
+	  	Logger.error("An exception occurred registering connection #{inspect request_handler_pid} with the AMQP client:  #{inspect e}")
+	  end
 
 	  {:reply, :ok, state}
   end
@@ -108,39 +124,118 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
     {:reply, :ok, state}
   end
 
-  defp execute_callback_handler(subscription_handler_options, subscription_handler, payload, %{delivery_tag: delivery_tag, redelivered: redelivered} = meta) do
-    try do
-      deserialized_payload = deserialize(payload)
-  		cond do
-  			is_function(subscription_handler_options[:callback_handler], 2) -> 
-  				subscription_handler_options[:callback_handler].(deserialized_payload, meta)
-  			is_function(subscription_handler_options[:callback_handler], 3) -> 
-  				subscription_handler_options[:callback_handler].(deserialized_payload, meta, %{subscription_handler: subscription_handler, delivery_tag: delivery_tag})
-  			true -> raise "callback_handler is an unknown arity!"
-  		end
+  defp execute_callback_handler(subscription_handler_options, subscription_handler, payload, %{delivery_tag: delivery_tag, redelivered: redelivered} = meta) do   
+  	case deserialize_payload(payload, delivery_tag, subscription_handler_options) do
+  		{false, _} -> 
+  			Basic.reject(subscription_handler_options[:channel], delivery_tag, requeue: false)
+  		{true, deserialized_payload} ->
+	  		cond do
+          #sync
+	  			is_function(subscription_handler_options[:callback_handler], 2) -> 
+				    try do
+							subscription_handler_options[:callback_handler].(deserialized_payload, meta)
+				    rescue exception ->
+				      if subscription_handler_options[:queue].requeue_on_error == true && redelivered == false do
+				        Logger.debug("An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}.  Requeueing message...")
+				        Basic.reject(subscription_handler_options[:channel], delivery_tag, requeue: not redelivered)
+				      else
+				        Logger.error("An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}")
+				        #let AMQP.Queue fail the message
+				        stacktrace = System.stacktrace
+				        reraise exception, stacktrace
+				      end
+				    end
+          #async
+	  			is_function(subscription_handler_options[:callback_handler], 3) -> 
+	  				spawn_link fn -> 
+					    try do
+								subscription_handler_options[:callback_handler].(deserialized_payload, meta, %{subscription_handler: subscription_handler, delivery_tag: delivery_tag})
+					    rescue exception ->
+					      if subscription_handler_options[:queue].requeue_on_error == true && redelivered == false do
+					        Logger.debug("An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}.  Requeueing message...")
+					        Basic.reject(subscription_handler_options[:channel], delivery_tag, requeue: not redelivered)
+					      else
+					        Logger.error("An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}")
+					        #let AMQP.Queue fail the message
+					        stacktrace = System.stacktrace
+					        reraise exception, stacktrace
+					      end
+					    end
+	  				end
+	  			true -> 
+	  				Logger.error("An error occurred processing request #{inspect delivery_tag}:  callback_handler is an unknown arity!")
+	  				Basic.reject(subscription_handler_options[:channel], delivery_tag, requeue: true)
+	  		end
+  	end
+	end
+
+  @doc """
+  Method to deserialize the request payload
+
+  ## Options
+  
+  The `payload` option represents raw payload of the message
+
+  The `delivery_tag` option represents the identifier of the message  
+
+  The `subscription_handler_options` option represents the options of the SubscriptionHandler associated with the request
+
+  ## Return Value
+
+  {deserialization success/failure, payload}
+
+  """
+  @spec deserialize_payload(String.t(), term, term) :: term  
+	def deserialize_payload(payload, delivery_tag, subscription_handler_options) do
+  	try do
+    	{true, deserialize(payload)}
     rescue exception ->
-      if subscription_handler_options[:queue].requeue_on_error == true && redelivered == false do
-        Logger.debug("An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}.  Requeueing message...")
-        Basic.reject(subscription_handler_options[:channel], delivery_tag, requeue: not redelivered)
-      else
-        Logger.error("An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}")
-        #let AMQP.Queue fail the message
-        stacktrace = System.stacktrace
-        reraise exception, stacktrace
-      end
+      Logger.debug("An error occurred deserializing the payload for request #{inspect delivery_tag}:  #{inspect exception}\n\n#{inspect payload}")
+      {false, nil}
     end
 	end
 
-  # once the queue is registered, it sends a basic_consume_ok.  Once you receive that, 
-  # you can wait for requests to come in
+  @doc """
+  Method to establish a connection to the AMQP client.  Once you've received confirmation (:basic_consume_ok),
+  you'll start to receive messages
+
+  ## Options
+  
+  The `channel_id` option represents the ID of the AMQP channel
+
+  The `callback_handler` option represents the method that should be called when a message is received.  The handler
+  should be a function with 2 or 3 arguments.    
+
+  The `subscription_handler` option defines the PID of the SubscriptionHandler that will be used to process the message
+
+  """
+  @spec start_async_handler(String.t(), term, term) :: term  
   def start_async_handler(channel, callback_handler, subscription_handler) do
+  	Logger.debug("Waiting to establish connection...")
 		receive do
-      {:basic_consume_ok, %{consumer_tag: consumer_tag}} -> process_async_request(channel, callback_handler, subscription_handler)
+      {:basic_consume_ok, %{consumer_tag: consumer_tag}} -> 
+      	Logger.debug("Successfully established connection to the broker!  Waiting for messages...")
+      	process_async_request(channel, callback_handler, subscription_handler)
+      other ->
+      	Logger.error("Failed to established connection to the broker:  #{inspect other}")
     end
   end
 
-  # async handler started, wait for messages
-  defp process_async_request(channel, callback_handler, subscription_handler) do
+  @doc """
+  Method to process messages from the AMQP client, and execute the corresponding callback_handler
+
+  ## Options
+  
+  The `channel_id` option represents the ID of the AMQP channel
+
+  The `callback_handler` option represents the method that should be called when a message is received.  The handler
+  should be a function with 2 or 3 arguments.    
+
+  The `subscription_handler` option defines the PID of the SubscriptionHandler that will be used to process the message
+
+  """
+  @spec process_async_request(String.t(), term, term) :: term
+  def process_async_request(channel, callback_handler, subscription_handler) do
     receive do
       {:basic_deliver, payload, meta} -> 
       	subscription_handler_options = CloudOS.Messaging.AMQP.SubscriptionHandler.get_subscription_options(subscription_handler)
@@ -154,27 +249,31 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
   end
 
   @doc """
-  Proxies to :erlang.term_to_binary
+  Method to serialize an object going to the AMQP callback handler
 
-  ## Accepts:
-  * term — a single data structure of any type
+  ## Options
 
-  ## Returns
-  binary
+  The `term` option defines the term to serialize
+
+  ## Return Value
+  
+  term
   """
-  @spec deserialize(term) :: binary
+  @spec serilalize(term) :: binary
   def serilalize(term) do
     :erlang.term_to_binary(term)
   end
 
   @doc """
-  Proxies to :erlang.term_to_binary
+  Method to deserialize an object from the AMQP callback handler
 
-  ## Accepts:
-  * binary
+  ## Options
 
-  ## Returns
-  * term
+  The `binary` option defines the term to deserialize
+
+  ## Return Value
+  
+  term
   """
   @spec deserialize(binary) :: term
   def deserialize(binary) do

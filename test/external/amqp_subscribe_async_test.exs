@@ -38,6 +38,8 @@ defmodule CloudOS.Messaging.AMQP.TestConsumerAsyncSub do
 		try do
 			IO.puts("TestConsumer:  received message #{inspect payload}")
 			CloudOS.Messaging.AMQP.SubscriptionHandler.acknowledge(subscription_handler, delivery_tag)
+			time = :random.uniform(10) * 1000
+			:timer.sleep(time)			
 		rescue e in _ ->
 			IO.puts("Error when reviewing received message:  #{inspect e}")
 			CloudOS.Messaging.AMQP.SubscriptionHandler.reject(subscription_handler, delivery_tag)
@@ -85,6 +87,8 @@ defmodule CloudOS.Messaging.AMQP.TestConsumerAsyncSub2 do
 		try do
 			IO.puts("TestConsumer:  received message #{inspect payload}")
 			CloudOS.Messaging.AMQP.SubscriptionHandler.acknowledge(subscription_handler, delivery_tag)
+			time = :random.uniform(10) * 1000
+			:timer.sleep(time)
 		rescue e in _ ->
 			IO.puts("Error when reviewing received message:  #{inspect e}")
 			CloudOS.Messaging.AMQP.SubscriptionHandler.reject(subscription_handler, delivery_tag)
@@ -93,7 +97,7 @@ defmodule CloudOS.Messaging.AMQP.TestConsumerAsyncSub2 do
 end
 
 
-defmodule CloudOS.Messaging.AMQP.SubscribeTest do
+defmodule CloudOS.Messaging.AMQP.SubscribeAsyncTest do
   use ExUnit.Case
   @moduletag :external
 
