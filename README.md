@@ -65,15 +65,17 @@ CloudOS.Messaging.ConnectionOptionsResolver.resolve(api, src_broker_id, src_exch
 
 ### Methods
 
-There are two methods currently exposed via the macro:
+The following methods are currently exposed via the macro:
 
-#### Subscribe
+#### Subscribe Synchronously
+
+When receiving messages from this queue, consumers should take an Elixir mindset of "let is fail".  This module provides some basic requeueing logic that will attempt to requeue the message for another subscriber, in the event an exception is thrown from a callback handler (this behavior can be disabled by setting the requeue_on_error property on a Queue to false).  If exceptions are generated meaning that no consumer can possibly process this message, the consumer should catch these exception and return normally, which will permanently remove the message from the queue.
 
 ```iex
 subscribe(connection_options \\ @connection_options, queue, callback_handler)
 ```
 
-The `subscribe` method allows a consumer to receive messages from the messaging system.  The provides 2/3 arguments, depending on the usage pattern:
+The `subscribe` method allows a consumer to receive messages from the messaging system.  The provides 2 arguments, depending on the usage pattern:
 
 * connection_options - CloudOS.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
 
@@ -97,10 +99,18 @@ def handle_msg(payload, meta) do
 end
 ```
 
-		* When receiving messages from this queue, consumers should take an Elixir mindset of "let is fail".  This module provides some basic requeueing logic that will attempt to requeue the message for another subscriber, in the event an exception is thrown from a callback handler (this behavior can be disabled by setting the requeue_on_error property on a Queue to false).  If exceptions are generated meaning that no consumer can possibly process this message, the consumer should catch these exception and return normally, which will permanently remove the message from the queue.
+#### Subscribe Asynchronously
 
-	* To receive messages asynchronously, and without auto-acknowledgement/rejection, the function must have an arity of 3 (payload, metadata, async_info):
-	
+When receiving messages from a queue, consumers should take an Elixir mindset of "let is fail".  This module provides some basic requeueing logic that will attempt to requeue the message for another subscriber, in the event an exception is thrown from a callback handler (this behavior can be disabled by setting the requeue_on_error property on a Queue to false).  If exceptions are generated meaning that no consumer can possibly process this message, the consumer should catch these exception and return normally, which will permanently remove the message from the queue.  
+
+If exceptions are not generated, the consumer is required to either call CloudOS.Messaging.AMQP.SubscriptionHandler.acknowledge() or CloudOS.Messaging.AMQP.SubscriptionHandler.reject() after processing the message.  If not, the message will be routed to a another consumer.
+
+```iex
+subscribe(connection_options \\ @connection_options, queue, callback_handler)
+```
+
+To receive messages asynchronously, and without auto-acknowledgement/rejection, the function must have an arity of 3 (payload, metadata, async_info):
+
 ```iex
 def subscribe() do
 	case subscribe(@queue, fn(payload, _meta, async_info) -> handle_msg(payload, _meta, async_info) end) do
@@ -121,9 +131,6 @@ def handle_msg(payload, meta, %{subscription_handler: subscription_handler, deli
 	end
 end
 ```
-
-		* When receiving messages from a queue, consumers should take an Elixir mindset of "let is fail".  This module provides some basic requeueing logic that will attempt to requeue the message for another subscriber, in the event an exception is thrown from a callback handler (this behavior can be disabled by setting the requeue_on_error property on a Queue to false).  If exceptions are generated meaning that no consumer can possibly process this message, the consumer should catch these exception and return normally, which will permanently remove the message from the queue.  
-		* If exceptions are not generated, the consumer is required to either call CloudOS.Messaging.AMQP.SubscriptionHandler.acknowledge() or CloudOS.Messaging.AMQP.SubscriptionHandler.reject() after processing the message.  If not, the message will be routed to a another consumer.
 
 #### Publish
 
