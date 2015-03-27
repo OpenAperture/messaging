@@ -34,7 +34,7 @@ defmodule CloudOS.Messaging.Mixfile do
       {:amqp, "0.1.0"},
       {:uuid, "~> 0.1.5" },
 
-      {:cloudos_manager_api, git: "git@github.com:UmbrellaCorporation-SecretProjectLab/cloudos_manager_api.git", ref: "2c9d20d705dc94580699f56c539dbf64746ffaf5"},
+      {:cloudos_manager_api, git: "https://#{System.get_env("GITHUB_OAUTH_TOKEN")}:x-oauth-basic@github.com/UmbrellaCorporation-SecretProjectLab/cloudos_manager_api.git", ref: "2c9d20d705dc94580699f56c539dbf64746ffaf5"},
 
       #test dependencies
       {:exvcr, github: "parroty/exvcr"},
