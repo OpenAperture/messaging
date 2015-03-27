@@ -96,10 +96,11 @@ def handle_msg(payload, meta) do
 	IO.puts("TestConsumer:  received message #{inspect payload}")
 end
 ```
+
 		* When receiving messages from this queue, consumers should take an Elixir mindset of "let is fail".  This module provides some basic requeueing logic that will attempt to requeue the message for another subscriber, in the event an exception is thrown from a callback handler (this behavior can be disabled by setting the requeue_on_error property on a Queue to false).  If exceptions are generated meaning that no consumer can possibly process this message, the consumer should catch these exception and return normally, which will permanently remove the message from the queue.
 
 	* To receive messages asynchronously, and without auto-acknowledgement/rejection, the function must have an arity of 3 (payload, metadata, async_info):
-
+	
 ```iex
 def subscribe() do
 	case subscribe(@queue, fn(payload, _meta, async_info) -> handle_msg(payload, _meta, async_info) end) do
@@ -120,6 +121,7 @@ def handle_msg(payload, meta, %{subscription_handler: subscription_handler, deli
 	end
 end
 ```
+
 		* When receiving messages from a queue, consumers should take an Elixir mindset of "let is fail".  This module provides some basic requeueing logic that will attempt to requeue the message for another subscriber, in the event an exception is thrown from a callback handler (this behavior can be disabled by setting the requeue_on_error property on a Queue to false).  If exceptions are generated meaning that no consumer can possibly process this message, the consumer should catch these exception and return normally, which will permanently remove the message from the queue.  
 		* If exceptions are not generated, the consumer is required to either call CloudOS.Messaging.AMQP.SubscriptionHandler.acknowledge() or CloudOS.Messaging.AMQP.SubscriptionHandler.reject() after processing the message.  If not, the message will be routed to a another consumer.
 
