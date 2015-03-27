@@ -1,5 +1,3 @@
-require Logger
-
 defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   use ExUnit.Case
 
@@ -18,6 +16,11 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
 
   ## =============================
   # start_link tests
+
+  setup do
+    Application.ensure_started(:logger)
+    :ok
+  end
 
   test "start_link - success" do
     {result, pid} = ConnectionPool.start_link(%{})
