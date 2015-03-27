@@ -9,12 +9,16 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
 	use GenServer
 	use AMQP
 
+  @moduledoc """
+  This module contains the GenServer for managing subscription callbacks
+  """  
+  
   alias CloudOS.Messaging.ConnectionOptions
   alias CloudOS.Messaging.AMQP.ConnectionPools
   alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
 
   @doc """
-  Creation method for subscription handlers
+  Creation method for subscription handlers (sync and async)
 
   ## Options
 
@@ -47,22 +51,120 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
   	GenServer.call(subscription_handler, {:process_request, payload, meta})
   end
 
+  @doc """
+  Method to get the options from the handler server
+
+  ## Options
+
+  The `subscription_handler` option defines the PID of the SubscriptionHandler
+
+  The `_from` option defines the tuple {from, ref}
+
+  The `state` option represents the server's current state
+
+  ## Return Value
+  :ok
+  """
+  @spec get_subscription_options(pid) :: Map
   def get_subscription_options(subscription_handler) do
   	GenServer.call(subscription_handler, {:get_subscription_options})
   end
 
+  @doc """
+  Method to acknowledge a message from via the handler server
+
+  ## Options
+
+  The `subscription_handler` option defines the PID of the SubscriptionHandler
+
+  The `delivery_tag` option defines the delivery tag of the messsage
+
+  The `_from` option defines the tuple {from, ref}
+
+  The `state` option represents the server's current state
+
+  ## Return Value
+  :ok
+  """
+  @spec acknowledge(pid, String.t()) :: :ok
   def acknowledge(subscription_handler, delivery_tag) do
   	GenServer.call(subscription_handler, {:acknowledge, delivery_tag})
   end
 
+  @doc """
+  Method to reject a message from via the handler server
+
+  ## Options
+
+  The `subscription_handler` option defines the PID of the SubscriptionHandler
+
+  The `delivery_tag` option defines the delivery tag of the messsage
+
+  The `redeliver` option defines a boolean that can requeue a message
+
+  The `_from` option defines the tuple {from, ref}
+
+  The `state` option represents the server's current state
+
+  ## Return Value
+  :ok
+  """
+  @spec reject(pid, String.t(), term) :: :ok
   def reject(subscription_handler, delivery_tag, redeliver \\ false) do
   	GenServer.call(subscription_handler, {:reject, delivery_tag, redeliver})
   end
 
+  @doc """
+  Method to get options from the handler server
+
+  ## Options
+
+  The `options` option defines the new server state
+
+  The `_from` option defines the tuple {from, ref}
+
+  The `state` option represents the server's current state
+
+  ## Return Value
+  {:reply, state, state}
+  """
+  @spec handle_call({:get_subscription_options}, term, Map) :: {:reply, :ok, Map}
   def handle_call({:get_subscription_options}, _from, state) do
   	{:reply, state, state}
   end
 
+  @doc """
+  Method to set the options into the handler server
+
+  ## Options
+
+  The `options` option defines the new server state
+
+  The `_from` option defines the tuple {from, ref}
+
+  The `state` option represents the server's current state
+
+  ## Return Value
+  {:reply, state, state}
+  """
+  @spec handle_call({:set_subscription_options, Map}, term, Map) :: {:reply, Map, Map}
+  def handle_call({:set_subscription_options, options}, _from, state) do
+    {:reply, options, options}
+  end
+
+  @doc """
+  Method to subscribe to a queue (synchronously receive messages)
+
+  ## Options
+
+  The `_from` option defines the tuple {from, ref}
+
+  The `state` option represents the server's current state
+
+  ## Return Value
+  {:reply, :ok, state}
+  """
+  @spec handle_call({:subscribe_sync}, term, Map) :: {:reply, :ok, Map}
   def handle_call({:subscribe_sync}, _from, %{channel: channel, exchange: exchange, queue: queue, callback_handler: callback_handler} = state) do
   	Logger.debug("Subscribing synchronously to exchange #{exchange.name}, queue #{queue.name}...")
 
@@ -81,6 +183,19 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
 	  {:reply, :ok, state}
   end
 
+  @doc """
+  Method to subscribe to a queue (asynchronously receive messages)
+
+  ## Options
+
+  The `_from` option defines the tuple {from, ref}
+
+  The `state` option represents the server's current state
+
+  ## Return Value
+  {:reply, :ok, state}
+  """
+  @spec handle_call({:subscribe_async}, term, Map) :: {:reply, :ok, Map}
   def handle_call({:subscribe_async}, _from, %{channel: channel, exchange: exchange, queue: queue, callback_handler: callback_handler} = state) do
   	Logger.debug("Subscribing asynchronously to exchange #{exchange.name}, queue #{queue.name}...")
 
@@ -109,23 +224,86 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
 	  {:reply, :ok, state}
   end
 
+  @doc """
+  Method to process a message
+
+  ## Options
+
+  The `payload` option represents raw payload of the message
+
+  The `meta` option represents the metadata associated with the message
+  
+  The `_from` option defines the tuple {from, ref}
+
+  The `state` option represents the server's current state
+
+  ## Return Value
+  {:reply, :ok, state}
+  """
+  @spec handle_call({:process_request, Map, Map}, term, Map) :: {:reply, :ok, Map}
   def handle_call({:process_request, payload, meta}, _from, state) do
     execute_callback_handler(state, self(), payload, meta)
     {:reply, :ok, state}
   end
 
+  @doc """
+  Method to execute acknowledge a message, based on delivery tag
+
+  ## Options
+
+  The `delivery_tag` option defines the delivery tag of the messsage
+  
+  The `_from` option defines the tuple {from, ref}
+
+  The `state` option represents the server's current state
+
+  ## Return Value
+  {:reply, :ok, state}
+  """
+  @spec handle_call({:acknowledge, String.t()}, term, Map) :: {:reply, :ok, Map}
   def handle_call({:acknowledge, delivery_tag}, _from, state) do
     Basic.ack(state[:channel], delivery_tag)
     {:reply, :ok, state}
   end
 
+  @doc """
+  Method to execute reject a message, based on delivery tag
+
+  ## Options
+
+  The `delivery_tag` option defines the delivery tag of the messsage
+
+  The `redeliver` option defines a boolean that can requeue a message
+  
+  The `_from` option defines the tuple {from, ref}
+
+  The `state` option represents the server's current state
+
+  ## Return Value
+  {:reply, :ok, state}
+  """
+  @spec handle_call({:reject, String.t(), term}, term, Map) :: {:reply, :ok, Map}
   def handle_call({:reject, delivery_tag, redeliver}, _from, state) do
     Basic.reject(state[:channel], delivery_tag, requeue: redeliver)
     {:reply, :ok, state}
   end
 
-  defp execute_callback_handler(subscription_handler_options, subscription_handler, payload, %{delivery_tag: delivery_tag, redelivered: redelivered} = meta) do   
-  	case deserialize_payload(payload, delivery_tag, subscription_handler_options) do
+  @doc """
+  Method to execute the associated callback handler (either async or sync)
+
+  ## Options
+
+  The `subscription_handler_options` option defines the options associated with the SubscriptionHandler that will be used to process the message
+
+  The `subscription_handler` option defines the PID of the SubscriptionHandler that will be used to process the message
+  
+  The `payload` option represents raw payload of the message
+
+  The `meta` option represents the metadata associated with the message
+  """
+  @spec execute_callback_handler(Map, pid, term, Map) :: term
+  def execute_callback_handler(subscription_handler_options, subscription_handler, payload, %{delivery_tag: delivery_tag, redelivered: redelivered} = meta) do   
+  	case deserialize_payload(payload, delivery_tag) do
   		{false, _} -> 
   			Basic.reject(subscription_handler_options[:channel], delivery_tag, requeue: false)
   		{true, deserialized_payload} ->
@@ -147,7 +325,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
 				    end
           #async
 	  			is_function(subscription_handler_options[:callback_handler], 3) -> 
-	  				spawn_link fn -> 
+	  				spawn fn -> 
 					    try do
 								subscription_handler_options[:callback_handler].(deserialized_payload, meta, %{subscription_handler: subscription_handler, delivery_tag: delivery_tag})
 					    rescue exception ->
@@ -178,15 +356,13 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
 
   The `delivery_tag` option represents the identifier of the message  
 
-  The `subscription_handler_options` option represents the options of the SubscriptionHandler associated with the request
-
   ## Return Value
 
   {deserialization success/failure, payload}
 
   """
-  @spec deserialize_payload(String.t(), term, term) :: term  
-	def deserialize_payload(payload, delivery_tag, subscription_handler_options) do
+  @spec deserialize_payload(String.t(), term) :: term  
+	def deserialize_payload(payload, delivery_tag) do
   	try do
     	{true, deserialize(payload)}
     rescue exception ->
@@ -209,7 +385,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
   The `subscription_handler` option defines the PID of the SubscriptionHandler that will be used to process the message
 
   """
-  @spec start_async_handler(String.t(), term, term) :: term  
+  @spec start_async_handler(String.t(), term, pid) :: term  
   def start_async_handler(channel, callback_handler, subscription_handler) do
   	Logger.debug("Waiting to establish connection...")
 		receive do
@@ -234,7 +410,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
   The `subscription_handler` option defines the PID of the SubscriptionHandler that will be used to process the message
 
   """
-  @spec process_async_request(String.t(), term, term) :: term
+  @spec process_async_request(String.t(), term, pid) :: term
   def process_async_request(channel, callback_handler, subscription_handler) do
     receive do
       {:basic_deliver, payload, meta} -> 

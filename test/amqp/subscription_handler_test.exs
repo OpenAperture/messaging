@@ -227,10 +227,10 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
 
     channel = "channel"
-    {:ok, test_agent} = Agent.start_link(fn -> %{recieved_message: false} end)
+    {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
     callback_handler = fn(payload, meta, async_info) ->
       try do
-        Agent.update(test_agent, fn _ -> %{recieved_message: true} end)
+        Agent.update(test_agent, fn _ -> %{received_message: true} end)
       rescue e ->
         IO.puts("An unexpected error occurred in test 'process_async_request - success':  #{inspect e}")
       end
@@ -261,7 +261,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :timer.sleep(100)
 
     opts = Agent.get(test_agent, fn opts -> opts end)
-    assert opts[:recieved_message] == true
+    assert opts[:received_message] == true
   after
     :meck.unload(Exchange)
     :meck.unload(Queue)
@@ -282,7 +282,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.expect(Basic, :reject, fn _, _, _ -> :ok end)
 
     channel = "channel"
-    {:ok, test_agent} = Agent.start_link(fn -> %{recieved_message: false} end)
+    {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
     callback_handler = fn(payload, meta, async_info) ->
       raise "bad news bears"
     end
@@ -311,7 +311,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :timer.sleep(100)
 
     opts = Agent.get(test_agent, fn opts -> opts end)
-    assert opts[:recieved_message] == false
+    assert opts[:received_message] == false
   after
     :meck.unload(Exchange)
     :meck.unload(Queue)
@@ -380,4 +380,526 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     send(test_pid, {:basic_consume_failed, %{}})
     :timer.sleep(100)
   end    
+
+  ## =============================
+  # deserialize_payload tests   
+
+  test "deserialize_payload - success" do
+    SubscriptionHandler.deserialize_payload(:erlang.term_to_binary(%{}), "") == %{}
+  end
+
+  test "deserialize_payload - nil" do
+    SubscriptionHandler.deserialize_payload(:erlang.term_to_binary(nil), "") == nil
+  end  
+
+  ## =============================
+  # execute_callback_handler tests
+
+  test "execute_callback_handler - async success" do
+    :meck.new(Exchange, [:passthrough])
+    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+
+    :meck.new(Queue, [:passthrough])
+    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
+    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
+
+
+    channel = "channel"
+    {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
+    callback_handler = fn(payload, meta, async_info) ->
+      try do
+        Agent.update(test_agent, fn _ -> %{received_message: true} end)
+      rescue e ->
+        IO.puts("An unexpected error occurred in test 'execute_callback_handler - async success':  #{inspect e}")
+      end
+    end
+
+    exchange = %MessagingExchange{name: "exchange"}
+    queue = %MessagingQueue{
+      name: "test_queue",
+      requeue_on_error: false
+    }
+
+    subscription_handler_options = %{
+      channel: channel,
+      exchange: exchange,
+      queue: queue,
+      callback_handler: callback_handler
+    }
+
+    subscription_handler = SubscriptionHandler.subscribe(subscription_handler_options)
+
+    meta = %{
+      delivery_tag: "#{UUID.uuid1()}",
+      redelivered: false
+    }
+
+    payload = SubscriptionHandler.serilalize(%{})
+
+    SubscriptionHandler.execute_callback_handler(subscription_handler_options, subscription_handler, payload, meta)
+    :timer.sleep(100)
+
+    opts = Agent.get(test_agent, fn opts -> opts end)
+    assert opts[:received_message] == true
+  after
+    :meck.unload(Exchange)
+    :meck.unload(Queue)
+    :meck.unload(Basic)
+  end  
+
+  test "execute_callback_handler - async success" do
+    :meck.new(Exchange, [:passthrough])
+    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+
+    :meck.new(Queue, [:passthrough])
+    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
+    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
+
+
+    channel = "channel"
+    {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
+    callback_handler = fn(payload, meta) ->
+      try do
+        Agent.update(test_agent, fn _ -> %{received_message: true} end)
+      rescue e ->
+        IO.puts("An unexpected error occurred in test 'execute_callback_handler - sync success':  #{inspect e}")
+      end
+    end
+
+    exchange = %MessagingExchange{name: "exchange"}
+    queue = %MessagingQueue{
+      name: "test_queue",
+      requeue_on_error: false
+    }
+
+    subscription_handler_options = %{
+      channel: channel,
+      exchange: exchange,
+      queue: queue,
+      callback_handler: callback_handler
+    }
+
+    subscription_handler = SubscriptionHandler.subscribe(subscription_handler_options)
+
+    meta = %{
+      delivery_tag: "#{UUID.uuid1()}",
+      redelivered: false
+    }
+
+    payload = SubscriptionHandler.serilalize(%{})
+
+    SubscriptionHandler.execute_callback_handler(subscription_handler_options, subscription_handler, payload, meta)
+    :timer.sleep(100)
+
+    opts = Agent.get(test_agent, fn opts -> opts end)
+    assert opts[:received_message] == true
+  after
+    :meck.unload(Exchange)
+    :meck.unload(Queue)
+    :meck.unload(Basic)
+  end 
+
+  test "execute_callback_handler - async failure" do
+    :meck.new(Exchange, [:passthrough])
+    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+
+    :meck.new(Queue, [:passthrough])
+    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
+    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
+
+
+    channel = "channel"
+    {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
+    callback_handler = fn(payload, meta, async_info) ->
+      raise "bad news bears"
+    end
+
+    exchange = %MessagingExchange{name: "exchange"}
+    queue = %MessagingQueue{
+      name: "test_queue",
+      requeue_on_error: false
+    }
+
+    subscription_handler_options = %{
+      channel: channel,
+      exchange: exchange,
+      queue: queue,
+      callback_handler: callback_handler
+    }
+
+    subscription_handler = SubscriptionHandler.subscribe(subscription_handler_options)
+
+    meta = %{
+      delivery_tag: "#{UUID.uuid1()}",
+      redelivered: false
+    }
+
+    payload = SubscriptionHandler.serilalize(%{})
+
+    SubscriptionHandler.execute_callback_handler(subscription_handler_options, subscription_handler, payload, meta)
+    :timer.sleep(100)
+
+    opts = Agent.get(test_agent, fn opts -> opts end)
+    assert opts[:received_message] == false
+  after
+    :meck.unload(Exchange)
+    :meck.unload(Queue)
+    :meck.unload(Basic)
+  end  
+
+  test "execute_callback_handler - sync failure" do
+    :meck.new(Exchange, [:passthrough])
+    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+
+    :meck.new(Queue, [:passthrough])
+    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
+    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
+
+
+    channel = "channel"
+    {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
+    callback_handler = fn(payload, meta) ->
+      raise "bad news bears"
+    end
+
+    exchange = %MessagingExchange{name: "exchange"}
+    queue = %MessagingQueue{
+      name: "test_queue",
+      requeue_on_error: false
+    }
+
+    subscription_handler_options = %{
+      channel: channel,
+      exchange: exchange,
+      queue: queue,
+      callback_handler: callback_handler
+    }
+
+    subscription_handler = SubscriptionHandler.subscribe(subscription_handler_options)
+
+    meta = %{
+      delivery_tag: "#{UUID.uuid1()}",
+      redelivered: false
+    }
+
+    payload = SubscriptionHandler.serilalize(%{})
+
+    try do
+      SubscriptionHandler.execute_callback_handler(subscription_handler_options, subscription_handler, payload, meta)
+      assert nil == "execute_callback_handler should have thrown an exception"
+    rescue e ->
+      assert e != nil
+    end          
+
+    opts = Agent.get(test_agent, fn opts -> opts end)
+    assert opts[:received_message] == false
+  after
+    :meck.unload(Exchange)
+    :meck.unload(Queue)
+    :meck.unload(Basic)
+  end   
+
+  test "execute_callback_handler - failure wrong arity" do
+    :meck.new(Exchange, [:passthrough])
+    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+
+    :meck.new(Queue, [:passthrough])
+    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
+    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
+    :meck.expect(Basic, :reject, fn _, _, _ -> :ok end)
+    
+    channel = "channel"
+    {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
+    bad_callback_handler = fn(payload, meta, async_info, bad_news_bears) ->
+      assert "callback_handler should not be called, wrong arity"
+    end
+
+    good_callback_handler = fn(payload, meta, async_info) ->
+      :ok
+    end    
+
+    exchange = %MessagingExchange{name: "exchange"}
+    queue = %MessagingQueue{
+      name: "test_queue",
+      requeue_on_error: false
+    }
+
+    subscription_handler_options = %{
+      channel: channel,
+      exchange: exchange,
+      queue: queue,
+      callback_handler: good_callback_handler
+    }
+
+    subscription_handler = SubscriptionHandler.subscribe(subscription_handler_options)
+    GenServer.call(subscription_handler, {:set_subscription_options, Map.put(subscription_handler_options, :callback_handler, bad_callback_handler)})
+
+    meta = %{
+      delivery_tag: "#{UUID.uuid1()}",
+      redelivered: false
+    }
+
+    payload = SubscriptionHandler.serilalize(%{})
+
+    SubscriptionHandler.execute_callback_handler(subscription_handler_options, subscription_handler, payload, meta)
+
+    opts = Agent.get(test_agent, fn opts -> opts end)
+    assert opts[:received_message] == false
+  after
+    :meck.unload(Exchange)
+    :meck.unload(Queue)
+    :meck.unload(Basic)
+  end  
+
+  ## =============================
+  # handle_call({:reject}) tests   
+
+  test "handle_call({:reject}) - success" do
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :reject, fn _, _, _ -> :ok end)    
+
+    SubscriptionHandler.handle_call({:reject, "delivery_tag", false}, %{}, %{}) == {:reply, :ok, %{}}
+  after
+    :meck.unload(Basic)
+  end  
+
+  ## =============================
+  # handle_call({:acknowledge}) tests   
+
+  test "handle_call({:acknowledge}) - success" do
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :ack, fn _, _ -> :ok end)    
+
+    SubscriptionHandler.handle_call({:acknowledge, "delivery_tag"}, %{}, %{}) == {:reply, :ok, %{}}
+  after
+    :meck.unload(Basic)
+  end
+
+  ## =============================
+  # handle_call({:acknowledge}) tests   
+
+  test "handle_call({:subscribe_async}) - success" do
+    :meck.new(Exchange, [:passthrough])
+    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+
+    :meck.new(Queue, [:passthrough])
+    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
+    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+
+    channel = "channel"
+    {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
+    bad_callback_handler = fn(payload, meta, async_info) ->
+      :ok
+    end
+
+    callback_handler = fn(payload, meta, async_info) ->
+      :ok
+    end    
+
+    exchange = %MessagingExchange{name: "exchange"}
+    queue = %MessagingQueue{
+      name: "test_queue",
+      requeue_on_error: false
+    }
+
+    state = %{
+      channel: channel,
+      exchange: exchange,
+      queue: queue,
+      callback_handler: callback_handler
+    }
+    SubscriptionHandler.handle_call({:subscribe_async,}, %{}, state) == {:reply, :ok, state}
+  after
+    :meck.unload(Exchange)
+    :meck.unload(Queue)
+  end
+
+  ## =============================
+  # handle_call({:subscribe_async}) tests   
+
+  test "handle_call({:subscribe_async}) - success" do
+    :meck.new(Exchange, [:passthrough])
+    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+
+    :meck.new(Queue, [:passthrough])
+    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
+    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+
+    channel = "channel"
+    {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
+    bad_callback_handler = fn(payload, meta, async_info) ->
+      :ok
+    end
+
+    callback_handler = fn(payload, meta, async_info) ->
+      :ok
+    end    
+
+    exchange = %MessagingExchange{name: "exchange"}
+    queue = %MessagingQueue{
+      name: "test_queue",
+      requeue_on_error: false
+    }
+
+    state = %{
+      channel: channel,
+      exchange: exchange,
+      queue: queue,
+      callback_handler: callback_handler
+    }
+    SubscriptionHandler.handle_call({:subscribe_async,}, %{}, state) == {:reply, :ok, state}
+  after
+    :meck.unload(Exchange)
+    :meck.unload(Queue)
+  end
+
+  ## =============================
+  # handle_call({:subscribe_sync}) tests   
+
+  test "handle_call({:subscribe_sync}) - success" do
+    :meck.new(Exchange, [:passthrough])
+    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+
+    :meck.new(Queue, [:passthrough])
+    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
+    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+
+    channel = "channel"
+    {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
+    bad_callback_handler = fn(payload, meta, async_info) ->
+      :ok
+    end
+
+    callback_handler = fn(payload, meta, async_info) ->
+      :ok
+    end    
+
+    exchange = %MessagingExchange{name: "exchange"}
+    queue = %MessagingQueue{
+      name: "test_queue",
+      requeue_on_error: false
+    }
+
+    state = %{
+      channel: channel,
+      exchange: exchange,
+      queue: queue,
+      callback_handler: callback_handler
+    }
+    SubscriptionHandler.handle_call({:subscribe_sync,}, %{}, state) == {:reply, :ok, state}
+  after
+    :meck.unload(Exchange)
+    :meck.unload(Queue)
+  end  
+
+  ## =============================
+  # handle_call({:set_subscription_options}) tests   
+
+  test "handle_call({:set_subscription_options}) - success" do
+    :meck.new(Exchange, [:passthrough])
+    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+
+    :meck.new(Queue, [:passthrough])
+    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
+    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+
+    channel = "channel"
+    {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
+    bad_callback_handler = fn(payload, meta, async_info) ->
+      :ok
+    end
+
+    callback_handler = fn(payload, meta, async_info) ->
+      :ok
+    end    
+
+    exchange = %MessagingExchange{name: "exchange"}
+    queue = %MessagingQueue{
+      name: "test_queue",
+      requeue_on_error: false
+    }
+
+    state = %{
+      channel: channel,
+      exchange: exchange,
+      queue: queue,
+      callback_handler: callback_handler
+    }
+    subscription_handler = SubscriptionHandler.subscribe(state)
+    GenServer.call(subscription_handler, {:set_subscription_options, %{}})
+
+    returned_opts = GenServer.call(subscription_handler, {:get_subscription_options})
+    assert returned_opts == %{}
+  after
+    :meck.unload(Exchange)
+    :meck.unload(Queue)
+  end
+
+  ## =============================
+  # handle_call({:get_subscription_options}) tests   
+
+  test "handle_call({:get_subscription_options}) - success" do
+    :meck.new(Exchange, [:passthrough])
+    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+
+    :meck.new(Queue, [:passthrough])
+    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
+    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+
+    channel = "channel"
+    {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
+    bad_callback_handler = fn(payload, meta, async_info) ->
+      :ok
+    end
+
+    callback_handler = fn(payload, meta, async_info) ->
+      :ok
+    end    
+
+    exchange = %MessagingExchange{name: "exchange"}
+    queue = %MessagingQueue{
+      name: "test_queue",
+      requeue_on_error: false
+    }
+
+    state = %{
+      channel: channel,
+      exchange: exchange,
+      queue: queue,
+      callback_handler: callback_handler
+    }
+    subscription_handler = SubscriptionHandler.subscribe(state)
+    GenServer.call(subscription_handler, {:set_subscription_options, %{}})
+
+    returned_opts = GenServer.call(subscription_handler, {:get_subscription_options})
+    assert returned_opts == %{}
+  after
+    :meck.unload(Exchange)
+    :meck.unload(Queue)
+  end
 end

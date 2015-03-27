@@ -2,7 +2,12 @@
 
 This reusable Elixir messaging library provides abstracted methods for interacting with the CloudOS Messaging system.  
 
-Currently this library utlizes an AMQP client as its primary communication mechanism.  However, it add supervision and reconnection and failover logic for Connections and Channels.
+Currently this library utlizes an AMQP client as its primary communication mechanism.  In addition to the base AMQP library, it provides the following features:
+
+* Supervision and reconnection and failover logic for Connections
+* Supervision and reconnection and failover logic for Channels
+* Synchronous delivery and auto-acknowledgement/rejection of messages
+* Asynchronous delivery without acknowledgement of messages (consumer is required to acknowledge/reject)
 
 ## Usage
 
@@ -74,9 +79,49 @@ The `subscribe` method allows a consumer to receive messages from the messaging 
 
 * queue - CloudOS.Messaging.Queue struct, containing the queue (and possibly exchange) information
 
-* callback_handler - A 2-argument function, which receives message in the form of (payload, metadata)
+* callback_handler - A function which receives messages from the queue.  
+	* To receive messages synchronously, and auto-acknowledged/rejected, the function must have an arity of 2 (payload, metadata):
+```iex
+def subscribe() do
+	case subscribe(@queue, fn(payload, _meta) -> handle_msg(payload, _meta) end) do
+		:ok -> 
+			IO.puts("Successfully subscribed to test_queue!")
+		{:error, reason} -> 
+			IO.puts("Failed subscribed to test_queue:  #{inspect reason}!")
+			:error
+	end
+end
+  	
+def handle_msg(payload, meta) do
+	IO.puts("TestConsumer:  received message #{inspect payload}")
+end
+```
+		* When receiving messages from this queue, consumers should take an Elixir mindset of "let is fail".  This module provides some basic requeueing logic that will attempt to requeue the message for another subscriber, in the event an exception is thrown from a callback handler (this behavior can be disabled by setting the requeue_on_error property on a Queue to false).  If exceptions are generated meaning that no consumer can possibly process this message, the consumer should catch these exception and return normally, which will permanently remove the message from the queue.
 
-When receiving messages from a queue, consumers should take an Elixir mindset of "let is fail".  This module provides some basic requeueing logic that will attempt to requeue the message for another subscriber, in the event an exception is thrown from a callback handler (this behavior can be disabled by setting the requeue_on_error property on a Queue to false).  If exceptions are generated meaning that no consumer can possibly process this message, the consumer should catch these exception and return normally, which will permanently remove the message from the queue.
+	* To receive messages asynchronously, and without auto-acknowledgement/rejection, the function must have an arity of 3 (payload, metadata, async_info):
+
+```iex
+def subscribe() do
+	case subscribe(@queue, fn(payload, _meta, async_info) -> handle_msg(payload, _meta, async_info) end) do
+		:ok -> 
+			IO.puts("Successfully subscribed to test_queue!")
+		{:error, reason} -> 
+			IO.puts("Failed subscribed to test_queue:  #{inspect reason}!")
+			:error
+	end
+end
+
+def handle_msg(payload, meta, %{subscription_handler: subscription_handler, delivery_tag: delivery_tag} = async_info) do
+	try do
+		IO.puts("TestConsumer:  received message #{inspect payload}")
+		CloudOS.Messaging.AMQP.SubscriptionHandler.acknowledge(subscription_handler, delivery_tag)
+	rescue e in _ ->
+		CloudOS.Messaging.AMQP.SubscriptionHandler.reject(subscription_handler, delivery_tag)
+	end
+end
+```
+		* When receiving messages from a queue, consumers should take an Elixir mindset of "let is fail".  This module provides some basic requeueing logic that will attempt to requeue the message for another subscriber, in the event an exception is thrown from a callback handler (this behavior can be disabled by setting the requeue_on_error property on a Queue to false).  If exceptions are generated meaning that no consumer can possibly process this message, the consumer should catch these exception and return normally, which will permanently remove the message from the queue.  
+		* If exceptions are not generated, the consumer is required to either call CloudOS.Messaging.AMQP.SubscriptionHandler.acknowledge() or CloudOS.Messaging.AMQP.SubscriptionHandler.reject() after processing the message.  If not, the message will be routed to a another consumer.
 
 #### Publish
 
@@ -255,5 +300,9 @@ config :logger, :console,
 ```iex
 MIX_ENV=system mix test test/external/amqp_publish_test.exs --include external:true
 
+#sync processing
 MIX_ENV=system mix test test/external/amqp_subscribe_test.exs --include external:true
+
+#async processing
+MIX_ENV=system mix test test/external/amqp_subscribe_async_test.exs --include external:true
 ```
