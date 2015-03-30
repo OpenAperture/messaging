@@ -1,3 +1,5 @@
+require Logger
+
 defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   use ExUnit.Case, async: false
 
@@ -90,6 +92,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
 
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)
+
     connections_info = %{
       connections: %{},
       channels_for_connections: %{},
@@ -125,6 +130,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Channel)
     :meck.unload(Basic)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end  
 
   test "handle_call({:publish}) - fail, invalid channel" do
@@ -139,6 +145,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -175,6 +184,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Connection)
     :meck.unload(Channel)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   test "handle_call({:publish}) - fail, invalid connection" do
@@ -185,6 +195,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -220,6 +233,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   after
     :meck.unload(Connection)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end    
 
   ## =============================
@@ -245,6 +259,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -282,6 +299,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   test "handle_call({:subscribe}) - fails; channel fails" do
@@ -296,6 +314,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -332,6 +353,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Connection)
     :meck.unload(Channel)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   test "handle_call({:subscribe}) - fails; connection fails" do
@@ -342,6 +364,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -377,6 +402,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   after
     :meck.unload(Connection)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end    
 
   ## =============================
@@ -402,6 +428,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -448,6 +477,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   test "handle_call({:DOWN}) - successfully restart connection, connection fails" do
@@ -458,6 +488,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -500,6 +533,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   after
     :meck.unload(Connection)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end 
 
   test "handle_call({:DOWN}) - successfully restart connection, channel fails" do
@@ -514,6 +548,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -562,6 +599,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Connection)
     :meck.unload(Channel)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   test "handle_call({:DOWN}) - successfully restart connection, with channels" do
@@ -584,6 +622,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -641,6 +682,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end  
 
   test "handle_call({:DOWN}) - successfully restart channel" do
@@ -663,6 +705,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -707,6 +752,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   test "handle_call({:DOWN}) - successfully restart connection, with channels and subscribers" do
@@ -729,6 +775,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -800,6 +849,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end    
 
   ## =============================
@@ -833,6 +883,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -880,6 +933,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   test "restart_connection - successfully restart connection, connection fails" do
@@ -890,6 +944,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -932,6 +989,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   after
     :meck.unload(Connection)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end 
 
   test "restart_connection - successfully restart connection, channel fails" do
@@ -946,6 +1004,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -987,6 +1048,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Connection)
     :meck.unload(Channel)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   test "restart_connection - successfully restart connection, with channels" do
@@ -1009,6 +1071,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -1063,6 +1128,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end  
 
   ## =============================
@@ -1088,6 +1154,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -1131,6 +1200,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   ## =============================
@@ -1156,6 +1226,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -1212,6 +1285,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end    
 
   ## =============================
@@ -1232,6 +1306,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -1269,6 +1346,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Channel)
     :meck.unload(Basic)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   test "get_channel - failed" do
@@ -1279,6 +1357,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn opts -> {:error, "bad news bears"} end)
@@ -1318,6 +1399,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Connection)
     :meck.unload(Channel)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   ## =============================
@@ -1331,6 +1413,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -1366,6 +1451,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   after
     :meck.unload(Connection)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   test "get_connection - failed" do
@@ -1376,6 +1462,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -1411,6 +1500,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   after
     :meck.unload(Connection)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   ## =============================
@@ -1424,6 +1514,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -1458,6 +1551,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   after
     :meck.unload(Connection)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   test "create_connections - failed" do
@@ -1468,6 +1562,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -1502,6 +1599,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   after
     :meck.unload(Connection)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
 
@@ -1517,6 +1615,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -1552,6 +1653,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   after
     :meck.unload(Connection)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   test "create_connection - failed" do
@@ -1562,6 +1664,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     connections_info = %{
       connections: %{},
@@ -1597,6 +1702,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   after
     :meck.unload(Connection)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end
 
   # =============================
@@ -1790,6 +1896,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
     :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
 
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
+
     connections_info = %{
       connections: %{},
       channels_for_connections: %{},
@@ -1845,5 +1954,6 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
     :meck.unload(GenEvent)
+    :meck.unload(Logger)
   end      
 end
