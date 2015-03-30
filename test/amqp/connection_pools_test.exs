@@ -1,7 +1,7 @@
 require Logger
 
 defmodule CloudOS.Messaging.AMQP.ConnectionPoolsTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
 
   alias AMQP.Connection
   alias AMQP.Channel

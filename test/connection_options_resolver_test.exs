@@ -1,5 +1,5 @@
 defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
   use ExVCR.Mock, adapter: ExVCR.Adapter.Httpc, options: [clear_mock: true]
 
   alias CloudOS.ManagerAPI

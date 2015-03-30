@@ -1,5 +1,5 @@
 defmodule CloudOS.Messaging.AMQP.ConnectionOptionsTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
 
   alias CloudOS.Messaging.ConnectionOptions
   alias CloudOS.Messaging.AMQP.ConnectionOptions, as: AMQPOptions

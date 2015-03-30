@@ -25,7 +25,7 @@ end
 
 
 defmodule CloudOS.MessagingTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
 
 	alias CloudOS.Messaging.Queue
 	alias CloudOS.Messaging.ConnectionOptions
