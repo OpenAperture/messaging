@@ -37,8 +37,9 @@ defmodule CloudOS.MessagingTest do
   alias CloudOS.Messaging.ConsumerTest
   alias CloudOS.Messaging.Consumer2Test
 
-  test "the truth" do
-    assert 1 + 1 == 2
+  setup do
+    Application.ensure_started(:logger)
+    :ok
   end
 
   test "subscribe attribute options - success" do
