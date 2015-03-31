@@ -12,8 +12,6 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
   This module contains the logic to resolve the appropriate connection options for a messaging client
   """  
 
-  alias CloudOS.ManagerAPI
-  alias CloudOS.ManagerAPI.EtcdCluster
   alias CloudOS.ManagerAPI.MessagingExchange
   alias CloudOS.ManagerAPI.MessagingBroker
 
@@ -181,7 +179,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
   @spec get_connection_option_for_brokers(Map, term, String.t()) :: {term, Map}
   def get_connection_option_for_brokers(state, api, brokers) do
     idx = :random.uniform(length(brokers))-1
-    {broker, cur_idx} = Enum.reduce brokers, {nil, 0}, fn (cur_broker, {broker, cur_idx}) ->
+    {broker, _cur_idx} = Enum.reduce brokers, {nil, 0}, fn (cur_broker, {broker, cur_idx}) ->
       if cur_idx == idx do
         {cur_broker, cur_idx+1}
       else
@@ -248,7 +246,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
   def resolve_connection_option_for_broker(state, connection_options) do
     if connection_options != nil && length(connection_options) > 0 do
       idx = :random.uniform(length(connection_options))-1
-      {connection_option, cur_idx} = Enum.reduce connection_options, {nil, 0}, fn (cur_connection_option, {connection_option, cur_idx}) ->
+      {connection_option, _cur_idx} = Enum.reduce connection_options, {nil, 0}, fn (cur_connection_option, {connection_option, cur_idx}) ->
         if cur_idx == idx do
           {cur_connection_option, cur_idx+1}
         else

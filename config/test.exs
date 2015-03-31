@@ -19,6 +19,7 @@ config :logger, :console,
   level: :debug
 
 config :cloudos_manager_api, 
-	url: "https://cloudos-mgr.host.co",
+	manager_url: "https://cloudos-mgr.host.co",
+	oauth_login_url: "https://auth.host.co",
 	client_id: "id",
 	client_secret: "secret"
