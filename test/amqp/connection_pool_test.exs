@@ -254,7 +254,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
@@ -290,8 +290,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
       test: "data"
     }
 
-    {:reply, result, result_state} = ConnectionPool.handle_call({:subscribe, exchange, queue, fn (payload, _meta) -> :ok end}, %{}, state)
+    {:reply, {result, subscription_handler}, result_state} = ConnectionPool.handle_call({:subscribe, exchange, queue, fn (payload, _meta) -> :ok end}, %{}, state)
     assert result == :ok
+    assert subscription_handler != nil
     assert result_state != nil
   after
     :meck.unload(Connection)
@@ -406,6 +407,53 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   end    
 
   ## =============================
+  # handle_call({:unsubscribe}) tests
+
+  test "handle_call({:unsubscribe}) - success" do
+    :meck.new(SubscriptionHandler, [:passthrough])
+    {:ok, subscription_handler} = Agent.start_link(fn -> %{} end)
+    :meck.expect(SubscriptionHandler, :unsubscribe, fn handler -> :ok end)
+    :meck.expect(SubscriptionHandler, :get_subscription_options, fn handler -> %{channel_id: "123abc"}end)
+
+    connections_info = %{
+      connections: %{},
+      channels_for_connections: %{},
+      refs: HashDict.new
+    }
+
+    channels_info = %{
+      channels: %{},
+      channel_connections: %{},
+      queues_for_channel: %{
+        "123abc" => [subscription_handler]
+        },
+      refs: HashDict.new      
+    }
+    state = %{
+      connection_options: [
+        connection_url: "amqp:rabbithost"
+        ],
+      max_connection_cnt: 1,
+      connections_info: connections_info, 
+      channels_info: channels_info      
+    }
+
+    exchange = %MessagingExchange{name: "exchange"}
+    queue = %MessagingQueue{name: "test_queue"}
+    payload = %{
+      test: "data"
+    }
+
+    {:reply, result, result_state} = ConnectionPool.handle_call({:unsubscribe, subscription_handler}, %{}, state)
+    assert result == :ok
+    assert subscription_handler != nil
+    assert result_state != nil
+    assert result_state[:channels_info][:queues_for_channel]["123abc"] == []
+  after
+    :meck.unload(SubscriptionHandler)
+  end
+
+  ## =============================
   # handle_info({:DOWN}) tests
 
   test "handle_call({:DOWN}) - successfully restart connection, no channels" do
@@ -423,7 +471,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
@@ -617,7 +665,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
@@ -700,7 +748,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
@@ -770,7 +818,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
@@ -816,8 +864,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     original_channel_id_for_connection = List.first(resolved_state[:connections_info][:channels_for_connections][connection_url])
     assert original_channel_id_for_connection == channel_id
 
-
-    resolved_state = ConnectionPool.subscribe_to_queue(resolved_state, channel_id, exchange, queue, fn (_, _) -> :ok end)
+    {resolved_state, _} = ConnectionPool.subscribe_to_queue(resolved_state, channel_id, exchange, queue, fn (_, _) -> :ok end)
 
     {:noreply, result_state} = ConnectionPool.handle_info({:DOWN, ref, :process, conn, "manually stopped"}, resolved_state)
 
@@ -878,7 +925,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
@@ -1066,7 +1113,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
@@ -1149,7 +1196,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
@@ -1221,7 +1268,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
@@ -1267,7 +1314,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     original_channel_id_for_connection = List.first(resolved_state[:connections_info][:channels_for_connections][connection_url])
     assert original_channel_id_for_connection == channel_id
 
-    result_state = ConnectionPool.subscribe_to_queue(resolved_state, original_channel_id_for_connection, exchange, queue, fn (_, _) -> :ok end)
+    {result_state, _} = ConnectionPool.subscribe_to_queue(resolved_state, original_channel_id_for_connection, exchange, queue, fn (_, _) -> :ok end)
 
     queues_for_channel = result_state[:channels_info][:queues_for_channel][original_channel_id_for_connection]
     assert queues_for_channel != nil
@@ -1761,7 +1808,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.expect(ConnectionPools, :get_pool, fn opt -> %{} end)
 
     :meck.new(ConnectionPool, [:passthrough])
-    :meck.expect(ConnectionPool, :subscribe, fn _, _, _, _ -> :ok end)
+    :meck.expect(ConnectionPool, :subscribe, fn _, _, _, _ -> {:ok, "consumer_tag"} end)
 
     channels_info = %{
       channels: %{},
@@ -1835,7 +1882,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.expect(ConnectionPools, :get_pool, fn opt -> %{} end)
 
     :meck.new(ConnectionPool, [:passthrough])
-    :meck.expect(ConnectionPool, :subscribe, fn _, _, _, _ -> :ok end)
+    :meck.expect(ConnectionPool, :subscribe, fn _, _, _, _ -> {:ok, "consumer_tag"} end)
 
     connections_info = %{
       connections: %{},
@@ -1890,7 +1937,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
@@ -1936,7 +1983,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     original_channel_id_for_connection = List.first(resolved_state[:connections_info][:channels_for_connections][connection_url])
     assert original_channel_id_for_connection == channel_id
 
-    result_state = ConnectionPool.subscribe_to_queue(resolved_state, original_channel_id_for_connection, exchange, queue, fn (_, _) -> :ok end)
+    {result_state, _} = ConnectionPool.subscribe_to_queue(resolved_state, original_channel_id_for_connection, exchange, queue, fn (_, _) -> :ok end)
 
     queues_for_channel = result_state[:channels_info][:queues_for_channel][original_channel_id_for_connection]
     assert queues_for_channel != nil

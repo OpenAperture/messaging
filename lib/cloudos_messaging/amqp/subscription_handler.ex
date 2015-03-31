@@ -102,16 +102,50 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
 
   The `redeliver` option defines a boolean that can requeue a message
 
-  The `_from` option defines the tuple {from, ref}
-
-  The `state` option represents the server's current state
-
   ## Return Value
   :ok
   """
   @spec reject(pid, String.t(), term) :: :ok
   def reject(subscription_handler, delivery_tag, redeliver \\ false) do
   	GenServer.call(subscription_handler, {:reject, delivery_tag, redeliver})
+  end
+
+  @doc """
+  Method to unsubscribe from a queue (tied to the SubscriptionHandler)
+
+  ## Options
+
+  The `subscription_handler` option defines the PID of the SubscriptionHandler
+
+  ## Return Value
+  :ok
+  """
+  @spec unsubscribe(pid) :: :ok
+  def unsubscribe(subscription_handler) do
+    GenServer.call(subscription_handler, {:unsubscribe})
+  end
+
+  @doc """
+  Method to get options from the handler server
+
+  ## Options
+
+  The `options` option defines the new server state
+
+  The `_from` option defines the tuple {from, ref}
+
+  The `state` option represents the server's current state
+
+  ## Return Value
+  {:reply, :ok, state}
+  """
+  @spec handle_call({:unsubscribe}, term, Map) :: {:reply, :ok, Map}
+  def handle_call({:unsubscribe}, _from, %{channel: channel, consumer_tag: consumer_tag} = state) do
+    unless consumer_tag == nil do
+      Basic.cancel(channel, consumer_tag)
+    end
+    state = Map.put(state, :consumer_tag, nil)
+    {:reply, :ok, state}
   end
 
   @doc """
@@ -176,10 +210,11 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
 	  Queue.bind(channel, queue.name, exchange.name, queue.binding_options)
 
 	  subscription_handler = self()
-	  Queue.subscribe(channel, queue.name, fn payload, meta ->
+	  {:ok, consumer_tag} = Queue.subscribe(channel, queue.name, fn payload, meta ->
 	    CloudOS.Messaging.AMQP.SubscriptionHandler.process_request(subscription_handler, payload, meta)
 	  end)
 
+    state = Map.put(state, :consumer_tag, consumer_tag)
 	  {:reply, :ok, state}
   end
 
@@ -215,13 +250,14 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
 
 	  try do
 	  	Logger.debug("Attempting to register connection #{inspect request_handler_pid} with the AMQP client...")
-    	Basic.consume(channel, queue.name, request_handler_pid)
+    	{:ok, consumer_tag} = Basic.consume(channel, queue.name, request_handler_pid)
+      state = Map.put(state, :consumer_tag, consumer_tag)
     	Logger.debug("Successfully registered connection #{inspect request_handler_pid} with the AMQP client")
+      {:reply, :ok, state}
 	  rescue e ->
 	  	Logger.error("An exception occurred registering connection #{inspect request_handler_pid} with the AMQP client:  #{inspect e}")
+      {:reply, :ok, state}
 	  end
-
-	  {:reply, :ok, state}
   end
 
   @doc """

@@ -84,11 +84,27 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
 
   ## Return Values
 
-  :ok | {:error, reason}
+  {:ok, subscription_handler} | {:error, reason}
   """
-  @spec subscribe(pid, String.t(), String.t(), term) :: :ok | {:error, String.t()}
+  @spec subscribe(pid, String.t(), String.t(), term) :: {:ok, term} | {:error, String.t()}
   def subscribe(connection_pool, exchange, queue, callback_handler) do
     GenServer.call(connection_pool, {:subscribe, exchange, queue, callback_handler})
+  end
+
+  @doc """
+  Method to subscribe to a queue and provide a callback handler
+
+  ## Options
+
+  The `subscription_handler` option represents the PID of the SubscriptionHandler
+
+  ## Return Values
+
+  :ok | {:error, reason}
+  """
+  @spec unsubscribe(pid, pid) :: :ok | {:error, String.t()}
+  def unsubscribe(connection_pool, subscription_handler) do
+    GenServer.call(connection_pool, {:unsubscribe, subscription_handler})
   end
 
   @doc """
@@ -262,7 +278,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
 
   ## Return Values
 
-  {:reply, reply, new_state}
+  {:reply, {:ok, subscription_handler} | {:error, reason}, new_state}
   """  
   @spec handle_call({:subscribe, String.t(), String.t(), term}, term, term) :: {:reply, term, term}
   def handle_call({:subscribe, exchange, queue, callback_handler}, _from, state) do
@@ -280,9 +296,49 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
           end
         {channel_id, resolved_state} ->
           Logger.debug("Using channel #{channel_id}...")
-          resolved_state = subscribe_to_queue(resolved_state, channel_id, exchange, queue, callback_handler)
-          {:reply, :ok, resolved_state}
+          {resolved_state, subscription_handler} = subscribe_to_queue(resolved_state, channel_id, exchange, queue, callback_handler)
+          {:reply, {:ok, subscription_handler}, resolved_state}
       end
+    end
+  end
+
+  @doc """
+  GenServer callback - invoked to handle call (sync) messages.  Catches {:unsubscribe, ...} messages;
+  this callback will unsubsribe a consumer from a queue (associated with the SubscriptionHandler)
+
+  ## Options
+
+  The `connection_pool` option represents the PID of the GenServer
+
+  The `subscription_handler` option represents the AMQP SubscriptionHandler
+
+  ## Return Values
+
+  {:reply, :ok | {:error, reason}, new_state}
+  """  
+  @spec handle_call({:unsubscribe, pid}, term, Map) :: {:reply, term, term}
+  def handle_call({:unsubscribe, subscription_handler}, _from, state) do
+    Logger.debug("Unsubscribing...")
+    if state[:failover_connection_pool] != nil do
+      {:reply, :ok, unsubscribe_from_failover(state, subscription_handler)}
+    else
+      subscription_options = SubscriptionHandler.get_subscription_options(subscription_handler)
+      subscription_channel_id = subscription_options[:channel_id]
+
+      queues_for_channel = state[:channels_info][:queues_for_channel][subscription_channel_id]
+      queues_for_channel = unless queues_for_channel == nil do
+        List.delete(queues_for_channel, subscription_handler)
+      else
+        queues_for_channel
+      end
+
+      queues = Map.put(state[:channels_info][:queues_for_channel], subscription_channel_id, queues_for_channel)
+      channels_info = Map.put(state[:channels_info], :queues_for_channel, queues)
+      resolved_state = Map.put(state, :channels_info, channels_info)
+
+      SubscriptionHandler.unsubscribe(subscription_handler)
+
+      {:reply, :ok, resolved_state}
     end
   end
 
@@ -290,6 +346,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   # Method to subscribe to the failover connection pool
   #
   ## Options
+  #
+  # The `state` option represents the server state
+  # 
   # The `exchange` option represents the AMQP exchange
   #
   # The `queue` option represents the AMQP queue
@@ -305,6 +364,25 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   defp subscribe_to_failover(state, exchange, queue, callback_handler) do    
     Logger.debug("Rerouting subscribe request to failover connection pool...")
     CloudOS.Messaging.AMQP.ConnectionPool.subscribe(state[:failover_connection_pool], AMQPExchange.get_failover(exchange), queue, callback_handler)
+    state
+  end
+
+  @doc false
+  # Method to unsubscribe from the failover connection pool
+  #
+  ## Options
+  # The `state` option represents the server state
+  #
+  # The `subscription_handler` option represents the AMQP SubscriptionHandler
+  #
+  ## Return Value
+  #
+  # updated state
+  #
+  @spec unsubscribe_from_failover(term, pid) :: term
+  defp unsubscribe_from_failover(state, subscription_handler) do    
+    Logger.debug("Rerouting unsubscribe request to failover connection pool...")
+    CloudOS.Messaging.AMQP.ConnectionPool.unsubscribe(state[:failover_connection_pool], subscription_handler)
     state
   end
 
@@ -572,7 +650,8 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
         resolved_state = if queues_for_channel != nil do
           resolved_state = Enum.reduce queues_for_channel, resolved_state, fn (subscription_handler, resolved_state) ->
             queue_info = SubscriptionHandler.get_subscription_options(subscription_handler)
-            subscribe_to_queue(resolved_state, channel_id, queue_info[:exchange], queue_info[:queue], queue_info[:callback_handler])
+            {updated_state, subscription_handler} = subscribe_to_queue(resolved_state, channel_id, queue_info[:exchange], queue_info[:queue], queue_info[:callback_handler])
+            updated_state
           end
         else
           resolved_state
@@ -617,14 +696,14 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
 
   ## Return Values
 
-  the updated state
+  {the updated state, the new SubscriptionHandler}
   """  
-  @spec subscribe_to_queue(term, String.t(), String.t(), String.t(), term) :: term
+  @spec subscribe_to_queue(term, String.t(), String.t(), String.t(), term) :: {Map, term}
   def subscribe_to_queue(state, channel_id, exchange, queue, callback_handler) do
     Logger.debug("On channel #{channel_id}, subscribing to exchange #{exchange.name}, queue #{queue.name}, queue options #{inspect queue.options}, binding options #{inspect queue.binding_options}...")
 
     channel = state[:channels_info][:channels][channel_id]
-    subscription_handler = SubscriptionHandler.subscribe(%{channel: channel, exchange: exchange, queue: queue, callback_handler: callback_handler})
+    subscription_handler = SubscriptionHandler.subscribe(%{channel_id: channel_id, channel: channel, exchange: exchange, queue: queue, callback_handler: callback_handler})
     queues_for_channel = state[:channels_info][:queues_for_channel][channel_id]
     if queues_for_channel == nil do
       queues_for_channel = []
@@ -632,7 +711,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
     queues_for_channel = queues_for_channel ++ [subscription_handler]
     queues = Map.put(state[:channels_info][:queues_for_channel], channel_id, queues_for_channel)
     channels_info = Map.put(state[:channels_info], :queues_for_channel, queues)
-    Map.put(state, :channels_info, channels_info)
+    {Map.put(state, :channels_info, channels_info), subscription_handler}
   end
 
   @doc """

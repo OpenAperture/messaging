@@ -93,24 +93,56 @@ defmodule CloudOS.Messaging do
 
 		  ## Returns
 
-		  :ok | {:error, reason}
+		  for AMQP:
+        {:ok, subscription_handler} | {:error, reason}
 		  """
-		  @spec subscribe(term, term, term) :: :ok | {:error, String.t()} 
+		  @spec subscribe(term, term, term) :: {:ok, term} | {:error, String.t()} 
 			def subscribe(connection_options \\ @connection_options, queue, callback_handler) do
         case ConnectionOptions.type(connection_options) do
-					nil -> {:error, "The queue does not have a type defined!"}
+					nil -> {:error, "The connection options do not have a type defined!"}
 					:amqp ->
 						Logger.debug("Retrieving connection pool for #{connection_options.host}...")
 						connection_pool = ConnectionPools.get_pool(ConnectionOptions.get(connection_options))
 						if connection_pool == nil do
-							{:error, "Failed to retrieve a connection pool for #{connection_options.host}!"}
+							{:error, "Unable to subscribe - failed to retrieve a connection pool for #{connection_options.host}!"}
 						else
 							Logger.debug("Subscribing to connection pool  #{connection_options.host}...")
 							ConnectionPool.subscribe(connection_pool, queue.exchange, queue, callback_handler)						
 						end
-					_ -> {:error, "Queue type #{inspect queue.type} is unknown!"}
+					_ -> {:error, "Connection type #{inspect queue.type} is unknown!"}
 				end
 			end
+
+      @doc """
+      Unsubscribes to from a SubscriptionHandler in the Messaging system.
+
+      ## Options
+
+      The `connection_options` options value provides the ConnectionOptions; defaults to the @connection_options attribute
+
+      The `subscription_handler` option represents the PID of the SubscriptionHandler
+
+      ## Returns
+
+      for AMQP:
+        :ok | {:error, reason}
+      """
+      @spec subscribe(term, term, term) :: {:ok, term} | {:error, String.t()} 
+      def unsubscribe(connection_options \\ @connection_options, subscription_handler) do
+        case ConnectionOptions.type(connection_options) do
+          nil -> {:error, "The connection options do not have a type defined!"}
+          :amqp ->
+            Logger.debug("Retrieving connection pool for #{connection_options.host}...")
+            connection_pool = ConnectionPools.get_pool(ConnectionOptions.get(connection_options))
+            if connection_pool == nil do
+              {:error, "Unable to unsubscribe - failed to retrieve a connection pool for #{connection_options.host}!"}
+            else
+              Logger.debug("Subscribing to connection pool  #{connection_options.host}...")
+              ConnectionPool.unsubscribe(connection_pool, subscription_handler)            
+            end
+          _ -> {:error, "Connection type is unknown!"}
+        end        
+      end
 
 		  @doc """
 		  Publishes a message/payload to a specific queue within the Messaging system
@@ -130,17 +162,17 @@ defmodule CloudOS.Messaging do
 		  @spec subscribe(term, term, term) :: :ok | {:error, String.t()} 
 		  def publish(connection_options \\ @connection_options, queue, payload) do
 				case ConnectionOptions.type(connection_options) do
-					nil -> {:error, "The queue does not have a type defined!"}
+					nil -> {:error, "The connection options do not have a type defined!"}
 					:amqp ->
 						Logger.debug("Retrieving connection pool for #{connection_options.host}...")
 						connection_pool = ConnectionPools.get_pool(ConnectionOptions.get(connection_options))
 						if connection_pool == nil do
-							{:error, "Failed to retrieve a connection pool for #{connection_options.host}!"}
+							{:error, "Unable to publish - failed to retrieve a connection pool for #{connection_options.host}!"}
 						else						
 							Logger.debug("Publishing to connection pool  #{connection_options.host}...")
 							ConnectionPool.publish(connection_pool, queue.exchange, queue, payload)						
 						end
-					_ -> {:error, "Queue type #{inspect queue.type} is unknown!"}
+					_ -> {:error, "Connection type #{inspect queue.type} is unknown!"}
 				end
 		  end
     end

@@ -166,7 +166,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     exchange = %MessagingExchange{name: "exchange"}
     queue = %MessagingQueue{name: "test_queue"}
@@ -220,7 +220,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
@@ -275,7 +275,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
@@ -402,7 +402,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
@@ -458,7 +458,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
@@ -514,7 +514,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
@@ -566,7 +566,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
@@ -622,7 +622,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
@@ -705,7 +705,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
@@ -745,7 +745,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
@@ -785,7 +785,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
@@ -825,7 +825,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
@@ -869,7 +869,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
     :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
@@ -902,4 +902,16 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
   end
+
+  ## =============================
+  # handle_call({:reject}) tests   
+
+  test "handle_call({:unsubscribe}) - success" do
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :cancel, fn _, _ -> {:ok, "consumer_tag"} end)    
+
+    SubscriptionHandler.handle_call({:unsubscribe}, %{}, %{channel: "channel", consumer_tag: "consumer_tag"}) == {:reply, :ok, %{}}
+  after
+    :meck.unload(Basic)
+  end    
 end

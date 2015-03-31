@@ -336,4 +336,88 @@ defmodule CloudOS.MessagingTest do
   after
   	:meck.unload(ConnectionPools)
   end
+
+  test "unsubscribe options - success" do
+  	:meck.new(ConnectionPools, [:passthrough])
+  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
+
+  	:meck.new(ConnectionPool, [:passthrough])
+  	:meck.expect(ConnectionPool, :unsubscribe, fn pool, subscription_handler -> :ok end)
+
+		queue = %Queue{
+			name: "test_queue", 
+			exchange: %AMQPExchange{name: "aws:us-east-1b", options: [:durable]},
+			error_queue: "test_queue_error",
+			options: [durable: true, arguments: [{"x-dead-letter-exchange", :longstr, ""},{"x-dead-letter-routing-key", :longstr, "test_queue_error"}]],
+			binding_options: [routing_key: "test_queue"]
+		}
+
+		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+			username: "username",
+			password: "password",
+			virtual_host: "vhost",
+			host: "host"
+		}
+
+  	unsubscribe = Consumer2Test.unsubscribe(options, %{})
+  	assert unsubscribe == :ok
+  after
+  	:meck.unload(ConnectionPool)
+  	:meck.unload(ConnectionPools)
+  end  
+
+  test "unsubscribe options - failure" do
+  	:meck.new(ConnectionPools, [:passthrough])
+  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
+
+  	:meck.new(ConnectionPool, [:passthrough])
+  	:meck.expect(ConnectionPool, :unsubscribe, fn pool, subscription_handler -> {:error, "bad news bears"} end)
+
+		queue = %Queue{
+			name: "test_queue", 
+			exchange: %AMQPExchange{name: "aws:us-east-1b", options: [:durable]},
+			error_queue: "test_queue_error",
+			options: [durable: true, arguments: [{"x-dead-letter-exchange", :longstr, ""},{"x-dead-letter-routing-key", :longstr, "test_queue_error"}]],
+			binding_options: [routing_key: "test_queue"]
+		}
+
+		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+			username: "username",
+			password: "password",
+			virtual_host: "vhost",
+			host: "host"
+		}
+
+  	unsubscribe = Consumer2Test.unsubscribe(options, %{})
+  	assert unsubscribe == {:error, "bad news bears"}
+  after
+  	:meck.unload(ConnectionPool)
+  	:meck.unload(ConnectionPools)
+  end
+
+  test "unsubscribe options - invalid connection pool" do
+  	:meck.new(ConnectionPools, [:passthrough])
+  	:meck.expect(ConnectionPools, :get_pool, fn opts -> nil end)
+
+		queue = %Queue{
+			name: "test_queue", 
+			exchange: %AMQPExchange{name: "aws:us-east-1b", options: [:durable]},
+			error_queue: "test_queue_error",
+			options: [durable: true, arguments: [{"x-dead-letter-exchange", :longstr, ""},{"x-dead-letter-routing-key", :longstr, "test_queue_error"}]],
+			binding_options: [routing_key: "test_queue"]
+		}
+
+		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+			username: "username",
+			password: "password",
+			virtual_host: "vhost",
+			host: "host"
+		}
+
+  	{unsubscribe, reason} = Consumer2Test.unsubscribe(options, %{})
+  	assert unsubscribe == :error
+  	assert reason != nil
+  after
+  	:meck.unload(ConnectionPools)
+  end   
 end
