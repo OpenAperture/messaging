@@ -4,6 +4,7 @@ This reusable Elixir messaging library provides abstracted methods for interacti
 
 Currently this library utlizes an AMQP client as its primary communication mechanism.  In addition to the base AMQP library, it provides the following features:
 
+* Managed connection pools
 * Supervision and reconnection and failover logic for Connections
 * Supervision and reconnection and failover logic for Channels
 * Synchronous delivery and auto-acknowledgement/rejection of messages
@@ -83,13 +84,14 @@ The `subscribe` method allows a consumer to receive messages from the messaging 
 
 * callback_handler - A function which receives messages from the queue.  
 	* To receive messages synchronously, and auto-acknowledged/rejected, the function must have an arity of 2 (payload, metadata):
+
 ```iex
 def subscribe() do
 	case subscribe(@queue, fn(payload, _meta) -> handle_msg(payload, _meta) end) do
-		:ok -> 
+		{:ok, subscription_handler} -> 
 			IO.puts("Successfully subscribed to test_queue!")
 		{:error, reason} -> 
-			IO.puts("Failed subscribed to test_queue:  #{inspect reason}!")
+			IO.puts("Failed to subscribe to test_queue:  #{inspect reason}!")
 			:error
 	end
 end
@@ -109,15 +111,58 @@ If exceptions are not generated, the consumer is required to either call CloudOS
 subscribe(connection_options \\ @connection_options, queue, callback_handler)
 ```
 
-To receive messages asynchronously, and without auto-acknowledgement/rejection, the function must have an arity of 3 (payload, metadata, async_info):
+* connection_options - CloudOS.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
+
+* queue - CloudOS.Messaging.Queue struct, containing the queue (and possibly exchange) information
+
+* callback_handler - A function which receives messages from the queue.  
+	* To receive messages asynchronously, and without auto-acknowledgement/rejection, the function must have an arity of 3 (payload, metadata, async_info):
 
 ```iex
 def subscribe() do
 	case subscribe(@queue, fn(payload, _meta, async_info) -> handle_msg(payload, _meta, async_info) end) do
-		:ok -> 
+		{:ok, subscription_handler} -> 
 			IO.puts("Successfully subscribed to test_queue!")
 		{:error, reason} -> 
-			IO.puts("Failed subscribed to test_queue:  #{inspect reason}!")
+			IO.puts("Failed to subscribe to test_queue:  #{inspect reason}!")
+			:error
+	end
+end
+
+def handle_msg(payload, meta, %{subscription_handler: subscription_handler, delivery_tag: delivery_tag} = async_info) do
+	try do
+		IO.puts("TestConsumer:  received message #{inspect payload}")
+		CloudOS.Messaging.AMQP.SubscriptionHandler.acknowledge(subscription_handler, delivery_tag)
+	rescue e in _ ->
+		CloudOS.Messaging.AMQP.SubscriptionHandler.reject(subscription_handler, delivery_tag)
+	end
+end
+```
+
+#### Unsubscribe
+
+```iex
+unsubscribe(connection_options \\ @connection_options, subscription_handler)
+```
+
+To unsubscribe from  receiving updates, simply pass the subscription_handler (received during subscription) into the method:
+
+* connection_options - CloudOS.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
+
+* subscription_handler - SubscriptionHandler (obtained from `subscribe`)
+
+```iex
+def unsubscribe() do
+	case subscribe(@queue, fn(payload, _meta, async_info) -> handle_msg(payload, _meta, async_info) end) do
+		{:ok, subscription_handler} -> 
+			IO.puts("Successfully subscribed to test_queue!")
+
+			case unsubscribe(subscription_handler) do
+				:ok -> :ok
+				{:error, reason} -> IO.puts("Failed to unsubscribe from test_queue:  #{inspect reason}!")
+			end
+		{:error, reason} -> 
+			IO.puts("Failed to subscribe to test_queue:  #{inspect reason}!")
 			:error
 	end
 end
@@ -145,6 +190,16 @@ The `publish` method allows a consumer to push messages into the messaging syste
 * queue - CloudOS.Messaging.Queue struct, containing the queue (and possibly exchange) information
 
 * payload - The term or primitive you want to publish
+
+#### Close Connection
+
+```iex
+close_connection(connection_options \\ @connection_options)
+```
+
+The `close_connection` method allows a consumer to close the connection (including subscriptions, channels, and connections) associated with a set of Connection Options
+
+* connection_options - CloudOS.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
 
 ## Usage Patterns
 
