@@ -79,18 +79,18 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "handle_call({:publish}) - success" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:ok, %Connection{pid: chan}} end)
+    :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
 
     :meck.new(Basic, [:passthrough])
-    :meck.expect(Basic, :publish, fn channel, exchange, queue, payload, opts -> :ok end)
+    :meck.expect(Basic, :publish, fn _, _, _, _, _ -> :ok end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)
@@ -136,15 +136,15 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "handle_call({:publish}) - fail, invalid channel" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:error, "bad news bears"} end)
+    :meck.expect(Channel, :open, fn _ -> {:error, "bad news bears"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -190,11 +190,11 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "handle_call({:publish}) - fail, invalid connection" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:error, "bad news bears"} end)
+    :meck.expect(Connection, :open, fn _ -> {:error, "bad news bears"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -242,23 +242,23 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "handle_call({:subscribe}) - success" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:ok, %Connection{pid: chan}} end)
+    :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
 
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -290,7 +290,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
       test: "data"
     }
 
-    {:reply, {result, subscription_handler}, result_state} = ConnectionPool.handle_call({:subscribe, exchange, queue, fn (payload, _meta) -> :ok end}, %{}, state)
+    {:reply, {result, subscription_handler}, result_state} = ConnectionPool.handle_call({:subscribe, exchange, queue, fn (_payload, _meta) -> :ok end}, %{}, state)
     assert result == :ok
     assert subscription_handler != nil
     assert result_state != nil
@@ -306,15 +306,15 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "handle_call({:subscribe}) - fails; channel fails" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:error, "bad news bears"} end)
+    :meck.expect(Channel, :open, fn _ -> {:error, "bad news bears"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -346,7 +346,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
       test: "data"
     }
 
-    {:reply, result, result_state} = ConnectionPool.handle_call({:subscribe, exchange, queue, fn (payload, _meta) -> :ok end}, %{}, state)
+    {:reply, result, result_state} = ConnectionPool.handle_call({:subscribe, exchange, queue, fn (_payload, _meta) -> :ok end}, %{}, state)
     assert elem(result, 0) == :error
     assert elem(result, 1) != nil
     assert result_state != nil
@@ -360,11 +360,11 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "handle_call({:subscribe}) - fails; connection fails" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:error, "bad news bears"} end)
+    :meck.expect(Connection, :open, fn _ -> {:error, "bad news bears"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -396,7 +396,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
       test: "data"
     }
 
-    {:reply, result, result_state} = ConnectionPool.handle_call({:subscribe, exchange, queue, fn (payload, _meta) -> :ok end}, %{}, state)
+    {:reply, result, result_state} = ConnectionPool.handle_call({:subscribe, exchange, queue, fn (_payload, _meta) -> :ok end}, %{}, state)
     assert elem(result, 0) == :error
     assert elem(result, 1) != nil
     assert result_state != nil
@@ -412,8 +412,8 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "handle_call({:unsubscribe}) - success" do
     :meck.new(SubscriptionHandler, [:passthrough])
     {:ok, subscription_handler} = Agent.start_link(fn -> %{} end)
-    :meck.expect(SubscriptionHandler, :unsubscribe, fn handler -> :ok end)
-    :meck.expect(SubscriptionHandler, :get_subscription_options, fn handler -> %{channel_id: "123abc"}end)
+    :meck.expect(SubscriptionHandler, :unsubscribe, fn _ -> :ok end)
+    :meck.expect(SubscriptionHandler, :get_subscription_options, fn _ -> %{channel_id: "123abc"}end)
 
     connections_info = %{
       connections: %{},
@@ -459,23 +459,23 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "handle_call({:DOWN}) - successfully restart connection, no channels" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:ok, %Connection{pid: chan}} end)
+    :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
 
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -531,11 +531,11 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "handle_call({:DOWN}) - successfully restart connection, connection fails" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:error, "bad news bears"} end)
+    :meck.expect(Connection, :open, fn _ -> {:error, "bad news bears"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -587,15 +587,15 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "handle_call({:DOWN}) - successfully restart connection, channel fails" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:error, "bad news bears"} end)
+    :meck.expect(Channel, :open, fn _ -> {:error, "bad news bears"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -653,23 +653,23 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "handle_call({:DOWN}) - successfully restart connection, with channels" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:ok, %Connection{pid: chan}} end)
+    :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
 
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -736,23 +736,23 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "handle_call({:DOWN}) - successfully restart channel" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:ok, %Channel{pid: chan}} end)
+    :meck.expect(Channel, :open, fn _ -> {:ok, %Channel{pid: chan}} end)
 
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -806,23 +806,23 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "handle_call({:DOWN}) - successfully restart connection, with channels and subscribers" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:ok, %Connection{pid: chan}} end)
+    :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
 
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -913,23 +913,23 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "restart_connection - successfully restart connection, no channels" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:ok, %Connection{pid: chan}} end)
+    :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
 
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -986,11 +986,11 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "restart_connection - successfully restart connection, connection fails" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:error, "bad news bears"} end)
+    :meck.expect(Connection, :open, fn _ -> {:error, "bad news bears"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -1042,15 +1042,15 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "restart_connection - successfully restart connection, channel fails" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:error, "bad news bears"} end)
+    :meck.expect(Channel, :open, fn _ -> {:error, "bad news bears"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -1101,23 +1101,23 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "restart_connection - successfully restart connection, with channels" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:ok, %Connection{pid: chan}} end)
+    :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
 
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -1184,23 +1184,23 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "restart_channel - success" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:ok, %Channel{pid: chan}} end)
+    :meck.expect(Channel, :open, fn _ -> {:ok, %Channel{pid: chan}} end)
 
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -1256,23 +1256,23 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "subscribe_to_queue - successfully restart connection, with channels and subscribers" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:ok, %Connection{pid: chan}} end)
+    :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
 
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -1341,18 +1341,18 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "get_channel - success" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:ok, %Connection{pid: chan}} end)
+    :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
 
     :meck.new(Basic, [:passthrough])
-    :meck.expect(Basic, :publish, fn channel, exchange, queue, payload, opts -> :ok end)
+    :meck.expect(Basic, :publish, fn _, _, _, _, _ -> :ok end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -1399,17 +1399,17 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "get_channel - failed" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
 
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:error, "bad news bears"} end)
+    :meck.expect(Channel, :open, fn _ -> {:error, "bad news bears"} end)
 
     connections_info = %{
       connections: %{},
@@ -1455,11 +1455,11 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "get_connection - success" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -1504,11 +1504,11 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "get_connection - failed" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:error, "bad news bears"} end)
+    :meck.expect(Connection, :open, fn _ -> {:error, "bad news bears"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -1556,11 +1556,11 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "create_connections - success" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -1604,11 +1604,11 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "create_connections - failed" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:error, "bad news bears"} end)
+    :meck.expect(Connection, :open, fn _ -> {:error, "bad news bears"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -1657,11 +1657,11 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "create_connection - success" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -1706,11 +1706,11 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "create_connection - failed" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:error, "bad news bears"} end)
+    :meck.expect(Connection, :open, fn _ -> {:error, "bad news bears"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -1785,7 +1785,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
 
   test "failover_connection - create a new connection, no migration of subscribers" do
     :meck.new(ConnectionPools, [:passthrough])
-    :meck.expect(ConnectionPools, :get_pool, fn opt -> %{} end)
+    :meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
 
     state = %{
       connection_options: %{
@@ -1805,7 +1805,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   
   test "failover_connection - create a new connection, migration of subscribers" do
     :meck.new(ConnectionPools, [:passthrough])
-    :meck.expect(ConnectionPools, :get_pool, fn opt -> %{} end)
+    :meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
 
     :meck.new(ConnectionPool, [:passthrough])
     :meck.expect(ConnectionPool, :subscribe, fn _, _, _, _ -> {:ok, "consumer_tag"} end)
@@ -1842,7 +1842,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
 
   test "failover_connection - create a new connection, migration has error" do
     :meck.new(ConnectionPools, [:passthrough])
-    :meck.expect(ConnectionPools, :get_pool, fn opt -> %{} end)
+    :meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
 
     :meck.new(ConnectionPool, [:passthrough])
     :meck.expect(ConnectionPool, :subscribe, fn _, _, _, _ -> {:error, "bad news bears"} end)
@@ -1879,7 +1879,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
 
   test "restart_channel - flip to failover" do
     :meck.new(ConnectionPools, [:passthrough])
-    :meck.expect(ConnectionPools, :get_pool, fn opt -> %{} end)
+    :meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
 
     :meck.new(ConnectionPool, [:passthrough])
     :meck.expect(ConnectionPool, :subscribe, fn _, _, _, _ -> {:ok, "consumer_tag"} end)
@@ -1925,23 +1925,23 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "handle_info({:DOWN}) - successfully restart connection, with channels and subscribers" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:ok, %Connection{pid: chan}} end)
+    :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
 
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)    
@@ -2010,26 +2010,26 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   test "handle_call({:close}) - success" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
-    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
-    :meck.expect(Connection, :close, fn conn -> :ok end)
+    :meck.expect(Connection, :open, fn _ -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :close, fn _ -> :ok end)
 
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
-    :meck.expect(Channel, :open, fn opts -> {:ok, %Connection{pid: chan}} end)
-    :meck.expect(Channel, :close, fn channel -> :ok end)
+    :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
+    :meck.expect(Channel, :close, fn _ -> :ok end)
 
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :start_link, fn -> {:ok, %{}} end)
-    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
-    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
+    :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
 
     :meck.new(Logger, [:passthrough])
     :meck.expect(Logger, :log, fn _, _, _ -> :ok end)

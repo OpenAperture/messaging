@@ -55,6 +55,7 @@ defmodule CloudOS.Messaging.AMQP.TestConsumer2 do
 	alias CloudOS.Messaging.AMQP.ConnectionOptions
 	alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
 
+	@connection_options nil
 	use CloudOS.Messaging
 
 	@queue %Queue{name: "test_queue", exchange: %AMQPExchange{name: "aws:us-east-1b"}}

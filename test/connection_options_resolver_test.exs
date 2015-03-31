@@ -196,7 +196,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
 
   test "cache_stale? - no time" do
     state = %{}
-    ConnectionOptionsResolver.cache_stale?(state) == true
+    assert ConnectionOptionsResolver.cache_stale?(state) == true
   end
 
   test "cache_stale? - expired" do
@@ -206,14 +206,14 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
     state = %{
       retrieval_time: :calendar.gregorian_seconds_to_datetime(seconds)
     }
-    ConnectionOptionsResolver.cache_stale?(state) == true
+    assert ConnectionOptionsResolver.cache_stale?(state) == true
   end
 
   test "cache_stale? - valid" do
     state = %{
       retrieval_time: :calendar.universal_time
     }
-    ConnectionOptionsResolver.cache_stale?(state) == false
+    assert ConnectionOptionsResolver.cache_stale?(state) == false
   end
 
   #=========================

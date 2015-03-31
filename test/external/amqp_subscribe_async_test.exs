@@ -25,7 +25,7 @@ defmodule CloudOS.Messaging.AMQP.TestConsumerAsyncSub do
 
 	def subscribe() do
 		IO.puts("subscribe")
-		case subscribe(@queue, fn(payload, _meta, async_info) -> handle_msg(payload, _meta, async_info) end) do
+		case subscribe(@queue, fn(payload, _meta, _async_info) -> handle_msg(payload, _meta, _async_info) end) do
 			:ok -> 
 				IO.puts("Successfully subsribed to test_queue!")
 			{:error, reason} -> 
@@ -34,7 +34,7 @@ defmodule CloudOS.Messaging.AMQP.TestConsumerAsyncSub do
 		end
 	end
 
-	def handle_msg(payload, meta, %{subscription_handler: subscription_handler, delivery_tag: delivery_tag} = async_info) do
+	def handle_msg(payload, _meta, %{subscription_handler: subscription_handler, delivery_tag: delivery_tag} = _async_info) do
 		try do
 			IO.puts("TestConsumer:  received message #{inspect payload}")
 			CloudOS.Messaging.AMQP.SubscriptionHandler.acknowledge(subscription_handler, delivery_tag)
@@ -73,7 +73,7 @@ defmodule CloudOS.Messaging.AMQP.TestConsumerAsyncSub2 do
 			host: Application.get_env(:cloudos_amqp, :host)
 		}
 
-		case subscribe(options, @queue, fn(payload, _meta, async_info) -> handle_msg(payload, _meta, async_info) end) do
+		case subscribe(options, @queue, fn(payload, _meta, _async_info) -> handle_msg(payload, _meta, _async_info) end) do
 			:ok -> 
 				IO.puts("Successfully subsribed to test_queue!")
 				:ok
@@ -83,7 +83,7 @@ defmodule CloudOS.Messaging.AMQP.TestConsumerAsyncSub2 do
 		end
 	end
 
-	def handle_msg(payload, meta, %{subscription_handler: subscription_handler, delivery_tag: delivery_tag} = async_info) do
+	def handle_msg(payload, _meta, %{subscription_handler: subscription_handler, delivery_tag: delivery_tag} = _async_info) do
 		try do
 			IO.puts("TestConsumer:  received message #{inspect payload}")
 			CloudOS.Messaging.AMQP.SubscriptionHandler.acknowledge(subscription_handler, delivery_tag)

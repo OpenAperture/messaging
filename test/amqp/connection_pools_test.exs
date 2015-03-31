@@ -3,23 +3,13 @@ require Logger
 defmodule CloudOS.Messaging.AMQP.ConnectionPoolsTest do
   use ExUnit.Case, async: false
 
-  alias AMQP.Connection
-  alias AMQP.Channel
-  alias AMQP.Basic
-  alias AMQP.Exchange
-  alias AMQP.Queue
-
-  alias CloudOS.Messaging.AMQP.ConnectionPool
   alias CloudOS.Messaging.AMQP.ConnectionPools
-
-  alias CloudOS.Messaging.Queue, as: MessagingQueue
-  alias CloudOS.Messaging.AMQP.Exchange, as: MessagingExchange
 
   ## =============================
   # get_pool tests
 
   test "get_pool - provide url" do
-    {result, pid} = ConnectionPools.create()
+    {_result, _pid} = ConnectionPools.create()
     result = ConnectionPools.get_pool([
       connection_url: "amqp://#user:password@host/virtual_host"
       ])
@@ -28,7 +18,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolsTest do
   end
 
   test "get_pool - retrieve same connection pool" do
-    {result, pid} = ConnectionPools.create()
+    {_result, _pid} = ConnectionPools.create()
 
     url = "#{UUID.uuid1()}"
     result = ConnectionPools.get_pool([
@@ -45,7 +35,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolsTest do
   end
 
   test "get_pool via options" do
-    {result, pid} = ConnectionPools.create()
+    {_result, _pid} = ConnectionPools.create()
 
     url = "#{UUID.uuid1()}"
     result = ConnectionPools.get_pool([
@@ -59,7 +49,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolsTest do
   end
 
   test "get_pool via options - retrieve same connection pool" do
-    {result, pid} = ConnectionPools.create()
+    {_result, _pid} = ConnectionPools.create()
 
     url = "#{UUID.uuid1()}"
     result = ConnectionPools.get_pool([
@@ -82,7 +72,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolsTest do
   end
 
   test "remove_pool - provide url" do
-    {result, pid} = ConnectionPools.create()
+    {_result, _pid} = ConnectionPools.create()
 
     result = ConnectionPools.get_pool([
       connection_url: "amqp://#user:password@host/virtual_host"
@@ -102,7 +92,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolsTest do
   end
 
   test "remove_pool via options" do
-    {result, pid} = ConnectionPools.create()
+    {_result, _pid} = ConnectionPools.create()
 
     url = "#{UUID.uuid1()}"
     result = ConnectionPools.get_pool([

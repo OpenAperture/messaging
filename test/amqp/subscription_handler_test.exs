@@ -3,8 +3,6 @@ require Logger
 defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
   use ExUnit.Case, async: false
 
-  alias AMQP.Connection
-  alias AMQP.Channel
   alias AMQP.Basic
   alias AMQP.Exchange
   alias AMQP.Queue
@@ -13,6 +11,11 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
   alias CloudOS.Messaging.Queue, as: MessagingQueue
   alias CloudOS.Messaging.AMQP.Exchange, as: MessagingExchange
+
+  setup do
+    Application.ensure_started(:logger)
+    :ok
+  end  
 
   # =======================================
   # handle_call({:process_request}) tests
@@ -31,7 +34,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
       redelivered: false
     }
 
-    callback_handler = fn(payload, meta) ->
+    callback_handler = fn(_payload, _meta) ->
       :ok
     end
 
@@ -68,7 +71,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
       redelivered: false
     }
 
-    callback_handler = fn(payload, meta) ->
+    callback_handler = fn(_payload, _meta) ->
       raise "bad news bears"
     end
 
@@ -101,7 +104,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
       redelivered: true
     }
 
-    callback_handler = fn(payload, meta) ->
+    callback_handler = fn(_payload, _meta) ->
       raise "bad news bears"
     end
 
@@ -136,7 +139,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
       redelivered: false
     }
 
-    callback_handler = fn(payload, meta) ->
+    callback_handler = fn(_payload, _meta) ->
       raise "bad news bears"
     end
 
@@ -161,17 +164,17 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
   test "handle_call({:subscribe_sync}) - success" do
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     exchange = %MessagingExchange{name: "exchange"}
     queue = %MessagingQueue{name: "test_queue"}
 
-    callback_handler = fn(payload, meta) ->
+    callback_handler = fn(_payload, _meta) ->
       raise "bad news bears"
     end
 
@@ -192,22 +195,22 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
   # deserialize tests   
 
   test "deserialize - success" do
-    SubscriptionHandler.deserialize(:erlang.term_to_binary(%{})) == %{}
+    assert SubscriptionHandler.deserialize(:erlang.term_to_binary(%{})) == %{}
   end
 
   test "deserialize - nil" do
-    SubscriptionHandler.deserialize(:erlang.term_to_binary(nil)) == nil
+    assert SubscriptionHandler.deserialize(:erlang.term_to_binary(nil)) == nil
   end
 
   ## =============================
   # deserialize tests   
 
   test "serilalize - success" do
-    SubscriptionHandler.serilalize(%{}) == :erlang.term_to_binary(%{})
+    assert SubscriptionHandler.serilalize(%{}) == :erlang.term_to_binary(%{})
   end
 
   test "serilalize - nil" do
-    SubscriptionHandler.serilalize(nil) == :erlang.term_to_binary(nil)
+    assert SubscriptionHandler.serilalize(nil) == :erlang.term_to_binary(nil)
   end
 
   ## =============================
@@ -215,12 +218,12 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
   test "process_async_request - success" do
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
@@ -228,7 +231,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
-    callback_handler = fn(payload, meta, async_info) ->
+    callback_handler = fn(_payload, _meta, _async_info) ->
       try do
         Agent.update(test_agent, fn _ -> %{received_message: true} end)
       rescue e ->
@@ -270,12 +273,12 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
   test "process_async_request - failure" do
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
@@ -283,7 +286,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
-    callback_handler = fn(payload, meta, async_info) ->
+    callback_handler = fn(_payload, _meta, _async_info) ->
       raise "bad news bears"
     end
 
@@ -319,7 +322,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
   end    
 
   test "process_async_request - basic_cancel" do
-    callback_handler = fn(payload, meta, async_info) ->
+    callback_handler = fn(_payload, _meta, _async_info) ->
       raise "bad news bears"
     end
 
@@ -335,7 +338,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
   end  
 
   test "process_async_request - basic_cancel_ok" do
-    callback_handler = fn(payload, meta, async_info) ->
+    callback_handler = fn(_payload, _meta, _async_info) ->
       raise "bad news bears"
     end
 
@@ -354,7 +357,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
   # start_async_handler tests
 
   test "start_async_handler - basic_consume_ok" do
-    callback_handler = fn(payload, meta, async_info) ->
+    callback_handler = fn(_payload, _meta, _async_info) ->
       raise "bad news bears"
     end
 
@@ -366,7 +369,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
   end   
 
   test "start_async_handler - other" do
-    callback_handler = fn(payload, meta, async_info) ->
+    callback_handler = fn(_payload, _meta, _async_info) ->
       raise "bad news bears"
     end
 
@@ -385,11 +388,11 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
   # deserialize_payload tests   
 
   test "deserialize_payload - success" do
-    SubscriptionHandler.deserialize_payload(:erlang.term_to_binary(%{}), "") == %{}
+    assert SubscriptionHandler.deserialize_payload(:erlang.term_to_binary(%{}), "") == {true, %{}}
   end
 
   test "deserialize_payload - nil" do
-    SubscriptionHandler.deserialize_payload(:erlang.term_to_binary(nil), "") == nil
+    assert SubscriptionHandler.deserialize_payload(:erlang.term_to_binary(nil), "") == {true, nil}
   end  
 
   ## =============================
@@ -397,12 +400,12 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
   test "execute_callback_handler - async success" do
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
@@ -410,7 +413,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
-    callback_handler = fn(payload, meta, async_info) ->
+    callback_handler = fn(_payload, _meta, _async_info) ->
       try do
         Agent.update(test_agent, fn _ -> %{received_message: true} end)
       rescue e ->
@@ -451,14 +454,14 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.unload(Basic)
   end  
 
-  test "execute_callback_handler - async success" do
+  test "execute_callback_handler - async success 1" do
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
@@ -466,7 +469,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
-    callback_handler = fn(payload, meta) ->
+    callback_handler = fn(_payload, _meta) ->
       try do
         Agent.update(test_agent, fn _ -> %{received_message: true} end)
       rescue e ->
@@ -509,12 +512,12 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
   test "execute_callback_handler - async failure" do
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
@@ -522,7 +525,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
-    callback_handler = fn(payload, meta, async_info) ->
+    callback_handler = fn(_payload, _meta, _async_info) ->
       raise "bad news bears"
     end
 
@@ -561,12 +564,12 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
   test "execute_callback_handler - sync failure" do
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
@@ -574,7 +577,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
-    callback_handler = fn(payload, meta) ->
+    callback_handler = fn(_payload, _meta) ->
       raise "bad news bears"
     end
 
@@ -617,12 +620,12 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
   test "execute_callback_handler - failure wrong arity" do
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
@@ -630,11 +633,11 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
     
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
-    bad_callback_handler = fn(payload, meta, async_info, bad_news_bears) ->
-      assert "callback_handler should not be called, wrong arity"
+    bad_callback_handler = fn(_payload, _meta, _async_info, _bad_news_bears) ->
+      IO.puts("callback_handler should not be called, wrong arity")
     end
 
-    good_callback_handler = fn(payload, meta, async_info) ->
+    good_callback_handler = fn(_payload, _meta, _async_info) ->
       :ok
     end    
 
@@ -700,20 +703,20 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
   test "handle_call({:subscribe_async}) - success" do
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
-    bad_callback_handler = fn(payload, meta, async_info) ->
+    bad_callback_handler = fn(_payload, _meta, _async_info) ->
       :ok
     end
 
-    callback_handler = fn(payload, meta, async_info) ->
+    callback_handler = fn(_payload, _meta, _async_info) ->
       :ok
     end    
 
@@ -738,22 +741,22 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
   ## =============================
   # handle_call({:subscribe_async}) tests   
 
-  test "handle_call({:subscribe_async}) - success" do
+  test "handle_call({:subscribe_async}) - success 1" do
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
-    bad_callback_handler = fn(payload, meta, async_info) ->
+    bad_callback_handler = fn(_payload, _meta, _async_info) ->
       :ok
     end
 
-    callback_handler = fn(payload, meta, async_info) ->
+    callback_handler = fn(_payload, _meta, _async_info) ->
       :ok
     end    
 
@@ -778,22 +781,22 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
   ## =============================
   # handle_call({:subscribe_sync}) tests   
 
-  test "handle_call({:subscribe_sync}) - success" do
+  test "handle_call({:subscribe_sync}) - success 1" do
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
-    bad_callback_handler = fn(payload, meta, async_info) ->
+    bad_callback_handler = fn(_payload, _meta, _async_info) ->
       :ok
     end
 
-    callback_handler = fn(payload, meta, async_info) ->
+    callback_handler = fn(_payload, _meta, _async_info) ->
       :ok
     end    
 
@@ -820,20 +823,20 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
   test "handle_call({:set_subscription_options}) - success" do
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
-    bad_callback_handler = fn(payload, meta, async_info) ->
+    bad_callback_handler = fn(_payload, _meta, _async_info) ->
       :ok
     end
 
-    callback_handler = fn(payload, meta, async_info) ->
+    callback_handler = fn(_payload, _meta, _async_info) ->
       :ok
     end    
 
@@ -864,20 +867,20 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
 
   test "handle_call({:get_subscription_options}) - success" do
     :meck.new(Exchange, [:passthrough])
-    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+    :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
     :meck.new(Queue, [:passthrough])
-    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
-    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
-    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+    :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
+    :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
+    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
-    bad_callback_handler = fn(payload, meta, async_info) ->
+    bad_callback_handler = fn(_payload, _meta, _async_info) ->
       :ok
     end
 
-    callback_handler = fn(payload, meta, async_info) ->
+    callback_handler = fn(_payload, _meta, _async_info) ->
       :ok
     end    
 

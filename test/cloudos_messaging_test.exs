@@ -1,7 +1,5 @@
 defmodule CloudOS.Messaging.ConsumerTest do
 	alias CloudOS.Messaging.Queue
-	alias CloudOS.Messaging.ConnectionOptions
-	alias CloudOS.Messaging.AMQP.ConnectionOptions
 	alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
 
 	@connection_options %CloudOS.Messaging.AMQP.ConnectionOptions{
@@ -15,8 +13,6 @@ end
 
 defmodule CloudOS.Messaging.Consumer2Test do
 	alias CloudOS.Messaging.Queue
-	alias CloudOS.Messaging.ConnectionOptions
-	alias CloudOS.Messaging.AMQP.ConnectionOptions
 	alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
 
 	@connection_options nil
@@ -28,8 +24,6 @@ defmodule CloudOS.MessagingTest do
   use ExUnit.Case, async: false
 
 	alias CloudOS.Messaging.Queue
-	alias CloudOS.Messaging.ConnectionOptions
-	alias CloudOS.Messaging.AMQP.ConnectionOptions
 	alias CloudOS.Messaging.AMQP.ConnectionPool
 	alias CloudOS.Messaging.AMQP.ConnectionPools
 	alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange 
@@ -44,10 +38,10 @@ defmodule CloudOS.MessagingTest do
 
   test "subscribe attribute options - success" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
 
   	:meck.new(ConnectionPool, [:passthrough])
-  	:meck.expect(ConnectionPool, :subscribe, fn pool, exchange, queue, callback -> :ok end)
+  	:meck.expect(ConnectionPool, :subscribe, fn _, _, _, _ -> :ok end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -57,7 +51,7 @@ defmodule CloudOS.MessagingTest do
 			binding_options: [routing_key: "test_queue"]
 		}
 
-  	subscribe_result = ConsumerTest.subscribe(queue, fn(payload, _meta) -> :ok end)
+  	subscribe_result = ConsumerTest.subscribe(queue, fn(_payload, _meta) -> :ok end)
   	assert subscribe_result == :ok
   after
   	:meck.unload(ConnectionPool)
@@ -66,10 +60,10 @@ defmodule CloudOS.MessagingTest do
 
   test "subscribe attribute options - failure" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
 
   	:meck.new(ConnectionPool, [:passthrough])
-  	:meck.expect(ConnectionPool, :subscribe, fn pool, exchange, queue, callback -> {:error, "bad news bears"} end)
+  	:meck.expect(ConnectionPool, :subscribe, fn _, _, _, _ -> {:error, "bad news bears"} end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -79,7 +73,7 @@ defmodule CloudOS.MessagingTest do
 			binding_options: [routing_key: "test_queue"]
 		}
 
-  	subscribe_result = ConsumerTest.subscribe(queue, fn(payload, _meta) -> :ok end)
+  	subscribe_result = ConsumerTest.subscribe(queue, fn(_payload, _meta) -> :ok end)
   	assert subscribe_result == {:error, "bad news bears"}
   after
   	:meck.unload(ConnectionPool)
@@ -88,7 +82,7 @@ defmodule CloudOS.MessagingTest do
 
   test "subscribe attribute options - invalid connection pool" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> nil end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> nil end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -98,7 +92,7 @@ defmodule CloudOS.MessagingTest do
 			binding_options: [routing_key: "test_queue"]
 		}
 
-  	{subscribe_result, reason} = ConsumerTest.subscribe(queue, fn(payload, _meta) -> :ok end)
+  	{subscribe_result, reason} = ConsumerTest.subscribe(queue, fn(_payload, _meta) -> :ok end)
   	assert subscribe_result == :error
   	assert reason != nil
   after
@@ -107,10 +101,10 @@ defmodule CloudOS.MessagingTest do
 
    test "publish attribute options - success" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
 
   	:meck.new(ConnectionPool, [:passthrough])
-  	:meck.expect(ConnectionPool, :publish, fn pool, exchange, queue, payload -> :ok end)
+  	:meck.expect(ConnectionPool, :publish, fn _, _, _, _ -> :ok end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -127,12 +121,12 @@ defmodule CloudOS.MessagingTest do
   	:meck.unload(ConnectionPools)
   end
 
-  test "publish attribute options - failure" do
+  test "publish attribute options - publish failure" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
 
   	:meck.new(ConnectionPool, [:passthrough])
-  	:meck.expect(ConnectionPool, :publish, fn pool, exchange, queue, payload -> {:error, "bad news bears"} end)
+  	:meck.expect(ConnectionPool, :publish, fn _, _, _, _ -> {:error, "bad news bears"} end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -150,9 +144,9 @@ defmodule CloudOS.MessagingTest do
   	:meck.unload(ConnectionPools)
   end
 
-  test "publish attribute options - failure" do
+  test "publish attribute options - get_pool failure" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> nil end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> nil end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -171,10 +165,10 @@ defmodule CloudOS.MessagingTest do
 
   test "subscribe options - success" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
 
   	:meck.new(ConnectionPool, [:passthrough])
-  	:meck.expect(ConnectionPool, :subscribe, fn pool, exchange, queue, callback -> :ok end)
+  	:meck.expect(ConnectionPool, :subscribe, fn _, _, _, _ -> :ok end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -191,7 +185,7 @@ defmodule CloudOS.MessagingTest do
 			host: "host"
 		}
 
-  	subscribe_result = Consumer2Test.subscribe(options, queue, fn(payload, _meta) -> :ok end)
+  	subscribe_result = Consumer2Test.subscribe(options, queue, fn(_payload, _meta) -> :ok end)
   	assert subscribe_result == :ok
   after
   	:meck.unload(ConnectionPool)
@@ -200,10 +194,10 @@ defmodule CloudOS.MessagingTest do
 
   test "subscribe options - failure" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
 
   	:meck.new(ConnectionPool, [:passthrough])
-  	:meck.expect(ConnectionPool, :subscribe, fn pool, exchange, queue, callback -> {:error, "bad news bears"} end)
+  	:meck.expect(ConnectionPool, :subscribe, fn _, _, _, _ -> {:error, "bad news bears"} end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -220,7 +214,7 @@ defmodule CloudOS.MessagingTest do
 			host: "host"
 		}
 
-  	subscribe_result = Consumer2Test.subscribe(options, queue, fn(payload, _meta) -> :ok end)
+  	subscribe_result = Consumer2Test.subscribe(options, queue, fn(_payload, _meta) -> :ok end)
   	assert subscribe_result == {:error, "bad news bears"}
   after
   	:meck.unload(ConnectionPool)
@@ -229,7 +223,7 @@ defmodule CloudOS.MessagingTest do
 
   test "subscribe options - invalid connection pool" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> nil end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> nil end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -246,7 +240,7 @@ defmodule CloudOS.MessagingTest do
 			host: "host"
 		}
 
-  	{subscribe_result, reason} = Consumer2Test.subscribe(options, queue, fn(payload, _meta) -> :ok end)
+  	{subscribe_result, reason} = Consumer2Test.subscribe(options, queue, fn(_payload, _meta) -> :ok end)
   	assert subscribe_result == :error
   	assert reason != nil
   after
@@ -255,10 +249,10 @@ defmodule CloudOS.MessagingTest do
 
    test "publish options - success" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
 
   	:meck.new(ConnectionPool, [:passthrough])
-  	:meck.expect(ConnectionPool, :publish, fn pool, exchange, queue, payload -> :ok end)
+  	:meck.expect(ConnectionPool, :publish, fn _, _, _, _ -> :ok end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -282,12 +276,12 @@ defmodule CloudOS.MessagingTest do
   	:meck.unload(ConnectionPools)
   end
 
-  test "publish options - failure" do
+  test "publish options -publish failure" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
 
   	:meck.new(ConnectionPool, [:passthrough])
-  	:meck.expect(ConnectionPool, :publish, fn pool, exchange, queue, payload -> {:error, "bad news bears"} end)
+  	:meck.expect(ConnectionPool, :publish, fn _, _, _, _ -> {:error, "bad news bears"} end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -312,9 +306,9 @@ defmodule CloudOS.MessagingTest do
   	:meck.unload(ConnectionPools)
   end
 
-  test "publish options - failure" do
+  test "publish options - get_pool failure" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> nil end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> nil end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -340,10 +334,10 @@ defmodule CloudOS.MessagingTest do
 
   test "unsubscribe options - success" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
 
   	:meck.new(ConnectionPool, [:passthrough])
-  	:meck.expect(ConnectionPool, :unsubscribe, fn pool, subscription_handler -> :ok end)
+  	:meck.expect(ConnectionPool, :unsubscribe, fn _, _ -> :ok end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -369,10 +363,10 @@ defmodule CloudOS.MessagingTest do
 
   test "unsubscribe options - failure" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
 
   	:meck.new(ConnectionPool, [:passthrough])
-  	:meck.expect(ConnectionPool, :unsubscribe, fn pool, subscription_handler -> {:error, "bad news bears"} end)
+  	:meck.expect(ConnectionPool, :unsubscribe, fn _, _ -> {:error, "bad news bears"} end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -398,7 +392,7 @@ defmodule CloudOS.MessagingTest do
 
   test "unsubscribe options - invalid connection pool" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> nil end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> nil end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -424,11 +418,11 @@ defmodule CloudOS.MessagingTest do
 
   test "close_connection options - success" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
-  	:meck.expect(ConnectionPools, :remove_pool, fn pool -> :ok end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
+  	:meck.expect(ConnectionPools, :remove_pool, fn _ -> :ok end)
 
   	:meck.new(ConnectionPool, [:passthrough])
-  	:meck.expect(ConnectionPool, :close, fn pool -> :ok end)
+  	:meck.expect(ConnectionPool, :close, fn _ -> :ok end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -454,11 +448,11 @@ defmodule CloudOS.MessagingTest do
 
   test "close_connection options - failure" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
-  	:meck.expect(ConnectionPools, :remove_pool, fn pool -> :ok end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
+  	:meck.expect(ConnectionPools, :remove_pool, fn _ -> :ok end)
 
   	:meck.new(ConnectionPool, [:passthrough])
-  	:meck.expect(ConnectionPool, :close, fn pool -> {:error, "bad news bears"} end)
+  	:meck.expect(ConnectionPool, :close, fn _ -> {:error, "bad news bears"} end)
 
 		queue = %Queue{
 			name: "test_queue", 
@@ -484,7 +478,7 @@ defmodule CloudOS.MessagingTest do
 
   test "close_connection options - invalid connection pool" do
   	:meck.new(ConnectionPools, [:passthrough])
-  	:meck.expect(ConnectionPools, :get_pool, fn opts -> nil end)
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> nil end)
 
 		queue = %Queue{
 			name: "test_queue", 
