@@ -129,6 +129,23 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
     GenServer.call(connection_pool, {:publish, exchange, queue, payload})    
   end
 
+  @doc """
+  Method to close all subscriptions, channels, and connections associated with this ConnectionPool
+
+  ## Options
+
+  The `connection_pool` option represents the PID of the GenServer
+
+  ## Return Values
+
+  :ok | {:error, reason}
+  """
+  @spec close(pid) :: :ok | {:error, String.t()}
+  def close(connection_pool) do
+    GenServer.call(connection_pool, {:prepare_close})
+    GenServer.call(connection_pool, {:close})
+  end
+
   ## Server callbacks
 
   @doc """
@@ -240,25 +257,158 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
     end
   end
 
-  @doc false
-  # Method to publish to the failover connection pool
-  #
+  @doc """
+  GenServer callback - invoked to handle call (sync) messages.  Catches {:unsubscribe, ...} messages;
+  this callback will unsubsribe a consumer from a queue (associated with the SubscriptionHandler)
+
   ## Options
-  # The `exchange` option represents the AMQP exchange
-  #
-  # The `queue` option represents the AMQP queue
-  #
-  # The `payload` option represents the message data
-  #
-  ## Return Value
-  #
-  # updated state
-  #
-  @spec publish_to_failover(term, String.t(), term, term) :: term
-  defp publish_to_failover(state, exchange, queue, payload) do    
-    Logger.debug("Rerouting publishing request to failover connection pool...")
-    CloudOS.Messaging.AMQP.ConnectionPool.publish(state[:failover_connection_pool], AMQPExchange.get_failover(exchange), queue, payload)
-    state
+
+  The `connection_pool` option represents the PID of the GenServer
+
+  The `subscription_handler` option represents the AMQP SubscriptionHandler
+
+  ## Return Values
+
+  {:reply, :ok | {:error, reason}, new_state}
+  """  
+  @spec handle_call({:unsubscribe, pid}, term, Map) :: {:reply, term, term}
+  def handle_call({:unsubscribe, subscription_handler}, _from, state) do
+    Logger.debug("Unsubscribing...")
+    if state[:failover_connection_pool] != nil do
+      {:reply, :ok, unsubscribe_from_failover(state, subscription_handler)}
+    else
+      subscription_options = SubscriptionHandler.get_subscription_options(subscription_handler)
+      subscription_channel_id = subscription_options[:channel_id]
+
+      queues_for_channel = state[:channels_info][:queues_for_channel][subscription_channel_id]
+      queues_for_channel = unless queues_for_channel == nil do
+        List.delete(queues_for_channel, subscription_handler)
+      else
+        queues_for_channel
+      end
+
+      queues = Map.put(state[:channels_info][:queues_for_channel], subscription_channel_id, queues_for_channel)
+      channels_info = Map.put(state[:channels_info], :queues_for_channel, queues)
+      resolved_state = Map.put(state, :channels_info, channels_info)
+
+      SubscriptionHandler.unsubscribe(subscription_handler)
+
+      {:reply, :ok, resolved_state}
+    end
+  end
+
+  @doc """
+  GenServer callback - invoked to handle call (sync) messages.  Catches {:prepare_close, ...} messages;
+  this callback will set the server state to "closed", so that all connections and channels
+  can be closed without restarting
+
+  ## Options
+
+  The `connection_pool` option represents the PID of the GenServer
+
+  ## Return Values
+
+  {:reply, :ok, new_state}
+  """  
+  @spec handle_call({:prepare_close}, term, Map) :: {:reply, term, term}
+  def handle_call({:prepare_close}, _from, state) do
+    Logger.debug("Closing all channels and connections...")
+    {:reply, :ok, Map.put(state, :closed, true)}
+  end
+
+  @doc """
+  GenServer callback - invoked to handle call (sync) messages.  Catches {:prepare_close, ...} messages;
+  this callback will close all subscriptions, channels and connections
+
+  ## Options
+
+  ## Return Values
+
+  {:reply, :ok, new_state}
+  """  
+  @spec handle_call({:close}, term, Map) :: {:reply, term, term}
+  def handle_call({:close}, _from, state) do
+    Logger.debug("Closing ConnectionPool...")
+
+    Logger.debug("Stopping GenEvent server...")
+    try do
+      GenEvent.stop(state[:events])
+    rescue e ->
+      Logger.error("An error occurred stopping GenEvent server: #{inspect e}")
+    end
+
+    Logger.debug("Closing all subscriptions...")
+    channels_subscriptions = Map.values(state[:channels_info][:queues_for_channel])
+    unless channels_subscriptions == nil || length(channels_subscriptions) == 0 do
+      Enum.reduce channels_subscriptions, nil, fn(queue_subscriptions, _result) ->
+        unless queue_subscriptions == nil || length(queue_subscriptions) == 0 do
+          Enum.reduce queue_subscriptions, nil, fn(subscription_handler, _result) ->
+            try do
+              SubscriptionHandler.unsubscribe(subscription_handler)
+            rescue e ->
+              Logger.error("An error occurred unsubscribing from queue:  #{inspect e}")
+            end
+          end
+        end
+      end
+    end
+    
+    Logger.debug("Closing all channels...")
+    channels = Map.values(state[:channels_info][:channels])
+    unless channels == nil || length(channels) == 0 do
+      Enum.reduce channels, nil, fn(channel, _result) ->
+        try do
+          Channel.close(channel)
+        rescue e ->
+          Logger.error("An error occurred closing channel:  #{inspect e}")
+        end          
+      end
+    end
+
+    Logger.debug("Closing all connections...")
+    connections = Map.values(state[:connections_info][:connections])
+    unless connections == nil || length(connections) == 0 do
+      Enum.reduce connections, nil, fn(connection, _result) ->
+        try do
+          Connection.close(connection)
+        rescue e ->
+          Logger.error("An error occurred closing connection:  #{inspect e}")
+        end          
+      end
+    end
+
+    event_manager = case GenEvent.start_link do
+      {:ok, event_manager} -> 
+        Logger.debug("GenEvent server restart was successful")
+        event_manager
+      {:error, reason} -> 
+        Logger.error("Failed to start GenEvent server:  #{inspect reason}")
+        nil
+    end
+
+    #reset the server state
+    connections_info = %{
+      connections: %{},
+      channels_for_connections: %{},
+      refs: HashDict.new
+    }
+
+    channels_info = %{
+      channels: %{},
+      channel_connections: %{},
+      queues_for_channel: %{},
+      refs: HashDict.new      
+    }
+
+    resolved_state =  %{
+      events: event_manager,
+      connection_options: [],
+      max_connection_cnt: state[:max_connection_cnt],
+      connections_info: connections_info, 
+      channels_info: channels_info
+    }
+
+    {:reply, :ok, resolved_state}
   end
 
   @doc """
@@ -300,46 +450,27 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
           {:reply, {:ok, subscription_handler}, resolved_state}
       end
     end
-  end
+  end  
 
-  @doc """
-  GenServer callback - invoked to handle call (sync) messages.  Catches {:unsubscribe, ...} messages;
-  this callback will unsubsribe a consumer from a queue (associated with the SubscriptionHandler)
-
+  @doc false
+  # Method to publish to the failover connection pool
+  #
   ## Options
-
-  The `connection_pool` option represents the PID of the GenServer
-
-  The `subscription_handler` option represents the AMQP SubscriptionHandler
-
-  ## Return Values
-
-  {:reply, :ok | {:error, reason}, new_state}
-  """  
-  @spec handle_call({:unsubscribe, pid}, term, Map) :: {:reply, term, term}
-  def handle_call({:unsubscribe, subscription_handler}, _from, state) do
-    Logger.debug("Unsubscribing...")
-    if state[:failover_connection_pool] != nil do
-      {:reply, :ok, unsubscribe_from_failover(state, subscription_handler)}
-    else
-      subscription_options = SubscriptionHandler.get_subscription_options(subscription_handler)
-      subscription_channel_id = subscription_options[:channel_id]
-
-      queues_for_channel = state[:channels_info][:queues_for_channel][subscription_channel_id]
-      queues_for_channel = unless queues_for_channel == nil do
-        List.delete(queues_for_channel, subscription_handler)
-      else
-        queues_for_channel
-      end
-
-      queues = Map.put(state[:channels_info][:queues_for_channel], subscription_channel_id, queues_for_channel)
-      channels_info = Map.put(state[:channels_info], :queues_for_channel, queues)
-      resolved_state = Map.put(state, :channels_info, channels_info)
-
-      SubscriptionHandler.unsubscribe(subscription_handler)
-
-      {:reply, :ok, resolved_state}
-    end
+  # The `exchange` option represents the AMQP exchange
+  #
+  # The `queue` option represents the AMQP queue
+  #
+  # The `payload` option represents the message data
+  #
+  ## Return Value
+  #
+  # updated state
+  #
+  @spec publish_to_failover(term, String.t(), term, term) :: term
+  defp publish_to_failover(state, exchange, queue, payload) do    
+    Logger.debug("Rerouting publishing request to failover connection pool...")
+    CloudOS.Messaging.AMQP.ConnectionPool.publish(state[:failover_connection_pool], AMQPExchange.get_failover(exchange), queue, payload)
+    state
   end
 
   @doc false
@@ -404,38 +535,43 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   """  
   @spec handle_info({:DOWN, term, term, term, String.t()}, term) :: {:noreply, term}
   def handle_info({:DOWN, ref, :process, _pid, _reason}, state) do
-    retry_cnt = state[:connection_options][:retry_cnt]
-    if retry_cnt == nil do
-      retry_cnt = 5
+    if (state[:closed] == true) do
+      Logger.debug("ConnectionPool is closed, ignoring reference #{inspect ref} :DOWN notification")
+      {:noreply, state}
+    else
+      retry_cnt = state[:connection_options][:retry_cnt]
+      if retry_cnt == nil do
+        retry_cnt = 5
+      end
+
+      #determine if this is a connection or a channel
+      {channel_id, remaining_channel_refs} = HashDict.pop(state[:channels_info][:refs], ref)
+      {connection_url, remaining_connection_refs} = HashDict.pop(state[:connections_info][:refs], ref)
+      resolved_state = cond do
+        channel_id != nil ->
+          Logger.info("Channel #{channel_id} is down, attempting to restart...")
+          channels_info = Map.put(state[:channels_info], :refs, remaining_channel_refs)
+          resolved_state = Map.put(state, :channels_info, channels_info)
+
+          #attempt to restart the channel
+          case restart_channel(state, connection_url, channel_id, 5) do
+            {resolved_state, {:ok, new_channel_id}} -> resolved_state
+            {resolved_state, {:error, reason}} -> resolved_state
+          end
+        connection_url != nil ->
+          Logger.info("Connection #{connection_url} is down, attempting to restart...")
+          connections_info = Map.put(state[:connections_info], :refs, remaining_connection_refs)
+          resolved_state = Map.put(state, :connections_info, connections_info)
+
+          #attempt to restart the connection
+          restart_connection(resolved_state, connection_url, retry_cnt)
+        true ->
+          Logger.error("Process #{ref} is down, but not managed by this connection pool")
+          state
+      end
+
+      {:noreply, resolved_state}
     end
-
-    #determine if this is a connection or a channel
-    {channel_id, remaining_channel_refs} = HashDict.pop(state[:channels_info][:refs], ref)
-    {connection_url, remaining_connection_refs} = HashDict.pop(state[:connections_info][:refs], ref)
-    resolved_state = cond do
-      channel_id != nil ->
-        Logger.info("Channel #{channel_id} is down, attempting to restart...")
-        channels_info = Map.put(state[:channels_info], :refs, remaining_channel_refs)
-        resolved_state = Map.put(state, :channels_info, channels_info)
-
-        #attempt to restart the channel
-        case restart_channel(state, connection_url, channel_id, 5) do
-          {resolved_state, {:ok, new_channel_id}} -> resolved_state
-          {resolved_state, {:error, reason}} -> resolved_state
-        end
-      connection_url != nil ->
-        Logger.info("Connection #{connection_url} is down, attempting to restart...")
-        connections_info = Map.put(state[:connections_info], :refs, remaining_connection_refs)
-        resolved_state = Map.put(state, :connections_info, connections_info)
-
-        #attempt to restart the connection
-        restart_connection(resolved_state, connection_url, retry_cnt)
-      true ->
-        Logger.error("Process #{ref} is down, but not managed by this connection pool")
-        state
-    end
-
-    {:noreply, resolved_state}
   end
 
   @doc """

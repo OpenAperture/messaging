@@ -80,4 +80,54 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolsTest do
     assert is_pid result2
     assert result == result2
   end
+
+  test "remove_pool - provide url" do
+    {result, pid} = ConnectionPools.create()
+
+    result = ConnectionPools.get_pool([
+      connection_url: "amqp://#user:password@host/virtual_host"
+      ])
+    assert is_pid result
+
+    result = ConnectionPools.remove_pool([
+      connection_url: "amqp://#user:password@host/virtual_host"
+      ])
+    assert result == :ok
+
+    result = ConnectionPools.get_pool([
+      connection_url: "amqp://#user:password@host/virtual_host"
+      ])
+
+    assert is_pid result
+  end
+
+  test "remove_pool via options" do
+    {result, pid} = ConnectionPools.create()
+
+    url = "#{UUID.uuid1()}"
+    result = ConnectionPools.get_pool([
+      username: "user",
+      password: "pass",
+      host: url,
+      virtual_host: "vhost"
+      ])
+    assert is_pid result
+
+    result = ConnectionPools.remove_pool([
+      username: "user",
+      password: "pass",
+      host: url,
+      virtual_host: "vhost"
+      ])
+    assert result == :ok    
+
+    result = ConnectionPools.get_pool([
+      username: "user",
+      password: "pass",
+      host: url,
+      virtual_host: "vhost"
+      ])
+
+    assert is_pid result
+  end  
 end

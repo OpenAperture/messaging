@@ -109,7 +109,7 @@ defmodule CloudOS.Messaging do
 							Logger.debug("Subscribing to connection pool  #{connection_options.host}...")
 							ConnectionPool.subscribe(connection_pool, queue.exchange, queue, callback_handler)						
 						end
-					_ -> {:error, "Connection type #{inspect queue.type} is unknown!"}
+					_ -> {:error, "Connection type #{inspect ConnectionOptions.type(connection_options)} is unknown!"}
 				end
 			end
 
@@ -140,7 +140,7 @@ defmodule CloudOS.Messaging do
               Logger.debug("Subscribing to connection pool  #{connection_options.host}...")
               ConnectionPool.unsubscribe(connection_pool, subscription_handler)            
             end
-          _ -> {:error, "Connection type is unknown!"}
+          _ -> {:error, "Connection type #{inspect ConnectionOptions.type(connection_options)} is unknown!"}
         end        
       end
 
@@ -172,9 +172,39 @@ defmodule CloudOS.Messaging do
 							Logger.debug("Publishing to connection pool  #{connection_options.host}...")
 							ConnectionPool.publish(connection_pool, queue.exchange, queue, payload)						
 						end
-					_ -> {:error, "Connection type #{inspect queue.type} is unknown!"}
+					_ -> {:error, "Connection type #{inspect ConnectionOptions.type(connection_options)} is unknown!"}
 				end
 		  end
+
+      @doc """
+      Method to completely close a connection (and all associated subscriptions, channels, connections, etc...)
+
+      ## Options
+
+      The `connection_options` options value provides the ConnectionOptions; defaults to the @connection_options attribute
+
+      ## Returns
+      
+      :ok | {:error, reason}
+      """
+      @spec close_connection(ConnectionOptions.t) :: :ok | {:error, String.t()} 
+      def close_connection(connection_options \\ @connection_options) do
+        case ConnectionOptions.type(connection_options) do
+          nil -> {:error, "The connection options do not have a type defined!"}
+          :amqp ->
+            amqp_connection_options = ConnectionOptions.get(connection_options)
+            Logger.debug("Retrieving connection pool for #{connection_options.host}...")
+            connection_pool = ConnectionPools.get_pool(amqp_connection_options)
+            if connection_pool == nil do
+              {:error, "Unable to close connection - failed to retrieve a connection pool for #{connection_options.host}!"}
+            else            
+              Logger.debug("Closing connection pool #{connection_options.host}...")
+              ConnectionPools.remove_pool(amqp_connection_options)
+              ConnectionPool.close(connection_pool)
+            end
+          _ -> {:error, "Connection type #{inspect ConnectionOptions.type(connection_options)} is unknown!"}
+        end
+      end      
     end
   end
 end

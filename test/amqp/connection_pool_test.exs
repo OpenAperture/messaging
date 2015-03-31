@@ -1920,9 +1920,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   end  
 
   ## =============================
-  # handle_call({:subscribe_sync}) tests   
+  # handle_info({:DOWN}) tests   
 
-  test "handle_call({:DOWN}) - successfully restart connection, with channels and subscribers" do
+  test "handle_info({:DOWN}) - successfully restart connection, with channels and subscribers" do
     :meck.new(Connection, [:passthrough])
     {:ok, conn} = Agent.start_link(fn -> %{} end)
     :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
@@ -1989,7 +1989,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     assert queues_for_channel != nil
     assert length(queues_for_channel) == 1
 
-    queue_info = List.first(queues_for_channel)
+    queue_info = SubscriptionHandler.get_subscription_options(List.first(queues_for_channel))
     assert queue_info != nil
     assert queue_info[:exchange] == exchange
     assert queue_info[:queue] == queue
@@ -2002,5 +2002,113 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Queue)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
-  end      
+  end
+
+  ## =============================
+  # handle_call({:close}) tests   
+
+  test "handle_call({:close}) - success" do
+    :meck.new(Connection, [:passthrough])
+    {:ok, conn} = Agent.start_link(fn -> %{} end)
+    :meck.expect(Connection, :open, fn opts -> {:ok, %Connection{pid: conn}} end)
+    :meck.expect(Connection, :close, fn conn -> :ok end)
+
+    {:ok, chan} = Agent.start_link(fn -> %{} end)
+    :meck.new(Channel, [:passthrough])
+    :meck.expect(Channel, :open, fn opts -> {:ok, %Connection{pid: chan}} end)
+    :meck.expect(Channel, :close, fn channel -> :ok end)
+
+    :meck.new(Exchange, [:passthrough])
+    :meck.expect(Exchange, :declare, fn channel, exchange_name, type, opts -> :ok end)
+
+    :meck.new(Queue, [:passthrough])
+    :meck.expect(Queue, :declare, fn channel, queue_name, opts -> :ok end)
+    :meck.expect(Queue, :bind, fn channel, queue_name, exchange_name, opts -> :ok end)
+    :meck.expect(Queue, :subscribe, fn channel, queue_name, callback_handler -> {:ok, "consumer_tag"} end)
+
+    :meck.new(GenEvent, [:unstick])
+    :meck.expect(GenEvent, :start_link, fn -> {:ok, %{}} end)
+    :meck.expect(GenEvent, :sync_notify, fn server, opt -> :ok end)
+    :meck.expect(GenEvent, :notify, fn server, opt -> :ok end)
+
+    :meck.new(Logger, [:passthrough])
+    :meck.expect(Logger, :log, fn _, _, _ -> :ok end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :cancel, fn _, _ -> :ok end)
+
+    connections_info = %{
+      connections: %{},
+      channels_for_connections: %{},
+      refs: HashDict.new
+    }
+
+    channels_info = %{
+      channels: %{},
+      channel_connections: %{},
+      queues_for_channel: %{},
+      refs: HashDict.new      
+    }
+    connection_url = "amqp:rabbithost"
+    state = %{
+      connection_options: [
+        host: "rabbithost",
+        connection_url: connection_url
+        ],
+      max_connection_cnt: 1,
+      connections_info: connections_info, 
+      channels_info: channels_info      
+    }
+
+    exchange = %MessagingExchange{name: "exchange"}
+    queue = %MessagingQueue{name: "test_queue"}
+    payload = %{
+      test: "data"
+    }
+
+    {ref, resolved_state} = ConnectionPool.create_connection(state[:connection_options], state)
+    original_dict_url = List.first(HashDict.values(resolved_state[:connections_info][:refs]))
+    original_dict_ref = List.first(HashDict.keys(resolved_state[:connections_info][:refs]))
+
+    {channel_id, resolved_state} = ConnectionPool.create_channel_for_connection(resolved_state, connection_url)
+    original_channel_id_for_connection = List.first(resolved_state[:connections_info][:channels_for_connections][connection_url])
+    assert original_channel_id_for_connection == channel_id
+
+    {result_state, _} = ConnectionPool.subscribe_to_queue(resolved_state, original_channel_id_for_connection, exchange, queue, fn (_, _) -> :ok end)
+
+    queues_for_channel = result_state[:channels_info][:queues_for_channel][original_channel_id_for_connection]
+    assert queues_for_channel != nil
+    assert length(queues_for_channel) == 1
+
+    queue_info = SubscriptionHandler.get_subscription_options(List.first(queues_for_channel))
+    assert queue_info != nil
+    assert queue_info[:exchange] == exchange
+    assert queue_info[:queue] == queue
+    assert queue_info[:callback_handler] != nil
+
+    {:reply, :ok, closed_state} = ConnectionPool.handle_call({:close}, %{}, result_state)
+    assert closed_state != nil
+    assert closed_state[:events] != nil
+    assert closed_state[:max_connection_cnt] == 1
+
+    assert closed_state[:connections_info] != nil
+    assert closed_state[:connections_info][:connections] == %{}
+    assert closed_state[:connections_info][:channels_for_connections] == %{}
+    assert closed_state[:connections_info][:refs] == HashDict.new
+
+    assert closed_state[:channels_info] != nil
+    assert closed_state[:channels_info][:channels] == %{}
+    assert closed_state[:channels_info][:channel_connections] == %{}
+    assert closed_state[:channels_info][:queues_for_channel] == %{}
+    assert closed_state[:channels_info][:refs] == HashDict.new
+
+  after
+    :meck.unload(Connection)
+    :meck.unload(Channel)
+    :meck.unload(Exchange)
+    :meck.unload(Queue)
+    :meck.unload(GenEvent)
+    :meck.unload(Logger)
+    :meck.unload(Basic)
+  end
 end

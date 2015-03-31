@@ -420,4 +420,90 @@ defmodule CloudOS.MessagingTest do
   after
   	:meck.unload(ConnectionPools)
   end   
+
+  test "close_connection options - success" do
+  	:meck.new(ConnectionPools, [:passthrough])
+  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
+  	:meck.expect(ConnectionPools, :remove_pool, fn pool -> :ok end)
+
+  	:meck.new(ConnectionPool, [:passthrough])
+  	:meck.expect(ConnectionPool, :close, fn pool -> :ok end)
+
+		queue = %Queue{
+			name: "test_queue", 
+			exchange: %AMQPExchange{name: "aws:us-east-1b", options: [:durable]},
+			error_queue: "test_queue_error",
+			options: [durable: true, arguments: [{"x-dead-letter-exchange", :longstr, ""},{"x-dead-letter-routing-key", :longstr, "test_queue_error"}]],
+			binding_options: [routing_key: "test_queue"]
+		}
+
+		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+			username: "username",
+			password: "password",
+			virtual_host: "vhost",
+			host: "host"
+		}
+
+  	close_connection = Consumer2Test.close_connection(options)
+  	assert close_connection == :ok
+  after
+  	:meck.unload(ConnectionPool)
+  	:meck.unload(ConnectionPools)
+  end  
+
+  test "close_connection options - failure" do
+  	:meck.new(ConnectionPools, [:passthrough])
+  	:meck.expect(ConnectionPools, :get_pool, fn opts -> %{} end)
+  	:meck.expect(ConnectionPools, :remove_pool, fn pool -> :ok end)
+
+  	:meck.new(ConnectionPool, [:passthrough])
+  	:meck.expect(ConnectionPool, :close, fn pool -> {:error, "bad news bears"} end)
+
+		queue = %Queue{
+			name: "test_queue", 
+			exchange: %AMQPExchange{name: "aws:us-east-1b", options: [:durable]},
+			error_queue: "test_queue_error",
+			options: [durable: true, arguments: [{"x-dead-letter-exchange", :longstr, ""},{"x-dead-letter-routing-key", :longstr, "test_queue_error"}]],
+			binding_options: [routing_key: "test_queue"]
+		}
+
+		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+			username: "username",
+			password: "password",
+			virtual_host: "vhost",
+			host: "host"
+		}
+
+  	close_connection = Consumer2Test.close_connection(options)
+  	assert close_connection == {:error, "bad news bears"}
+  after
+  	:meck.unload(ConnectionPool)
+  	:meck.unload(ConnectionPools)
+  end
+
+  test "close_connection options - invalid connection pool" do
+  	:meck.new(ConnectionPools, [:passthrough])
+  	:meck.expect(ConnectionPools, :get_pool, fn opts -> nil end)
+
+		queue = %Queue{
+			name: "test_queue", 
+			exchange: %AMQPExchange{name: "aws:us-east-1b", options: [:durable]},
+			error_queue: "test_queue_error",
+			options: [durable: true, arguments: [{"x-dead-letter-exchange", :longstr, ""},{"x-dead-letter-routing-key", :longstr, "test_queue_error"}]],
+			binding_options: [routing_key: "test_queue"]
+		}
+
+		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+			username: "username",
+			password: "password",
+			virtual_host: "vhost",
+			host: "host"
+		}
+
+  	{close_connection, reason} = Consumer2Test.close_connection(options)
+  	assert close_connection == :error
+  	assert reason != nil
+  after
+  	:meck.unload(ConnectionPools)
+  end  
 end
