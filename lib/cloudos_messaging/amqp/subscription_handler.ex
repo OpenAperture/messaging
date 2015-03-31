@@ -13,10 +13,6 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
   This module contains the GenServer for managing subscription callbacks
   """  
   
-  alias CloudOS.Messaging.ConnectionOptions
-  alias CloudOS.Messaging.AMQP.ConnectionPools
-  alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
-
   @doc """
   Creation method for subscription handlers (sync and async)
 
@@ -180,7 +176,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
   {:reply, state, state}
   """
   @spec handle_call({:set_subscription_options, Map}, term, Map) :: {:reply, Map, Map}
-  def handle_call({:set_subscription_options, options}, _from, state) do
+  def handle_call({:set_subscription_options, options}, _from, _state) do
     {:reply, options, options}
   end
 
@@ -197,7 +193,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
   {:reply, :ok, state}
   """
   @spec handle_call({:subscribe_sync}, term, Map) :: {:reply, :ok, Map}
-  def handle_call({:subscribe_sync}, _from, %{channel: channel, exchange: exchange, queue: queue, callback_handler: callback_handler} = state) do
+  def handle_call({:subscribe_sync}, _from, %{channel: channel, exchange: exchange, queue: queue, callback_handler: _callback_handler} = state) do
   	Logger.debug("Subscribing synchronously to exchange #{exchange.name}, queue #{queue.name}...")
 
   	Exchange.declare(channel, exchange.name, exchange.type, exchange.options)
@@ -423,7 +419,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
   def start_async_handler(channel, callback_handler, subscription_handler) do
   	Logger.debug("Waiting to establish connection...")
 		receive do
-      {:basic_consume_ok, %{consumer_tag: consumer_tag}} -> 
+      {:basic_consume_ok, %{consumer_tag: _consumer_tag}} -> 
       	Logger.debug("Successfully established connection to the broker!  Waiting for messages...")
       	process_async_request(channel, callback_handler, subscription_handler)
       other ->

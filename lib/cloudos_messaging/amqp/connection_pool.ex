@@ -11,7 +11,6 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   use GenServer
 	use AMQP
 
-  alias CloudOS.Messaging.ConnectionOptions
   alias CloudOS.Messaging.AMQP.ConnectionPools
   alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
   alias CloudOS.Messaging.AMQP.SubscriptionHandler
@@ -555,8 +554,8 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
 
           #attempt to restart the channel
           case restart_channel(state, connection_url, channel_id, 5) do
-            {resolved_state, {:ok, new_channel_id}} -> resolved_state
-            {resolved_state, {:error, reason}} -> resolved_state
+            {resolved_state, {:ok, _new_channel_id}} -> resolved_state
+            {resolved_state, {:error, _reason}} -> resolved_state
           end
         connection_url != nil ->
           Logger.info("Connection #{connection_url} is down, attempting to restart...")
@@ -717,18 +716,8 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
     end
   end
 
-  @doc """
-  Method to retrieve the implementation-specific failover options (implementation)
-
-  ## Options
-
-  The `options` option containing options map
-
-  ## Return Values
-
-  The implementation-specific options term
-  """
-  @spec get_failover_options(any) :: term
+  # Method to retrieve the implementation-specific failover options (implementation)
+  @spec get_failover_options(any) :: List
   defp get_failover_options(options) do
     failover_options = []
 
@@ -784,9 +773,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
         #re-register subscribers
         queues_for_channel = resolved_state[:channels_info][:queues_for_channel][old_channel_id]
         resolved_state = if queues_for_channel != nil do
-          resolved_state = Enum.reduce queues_for_channel, resolved_state, fn (subscription_handler, resolved_state) ->
+          Enum.reduce queues_for_channel, resolved_state, fn (subscription_handler, resolved_state) ->
             queue_info = SubscriptionHandler.get_subscription_options(subscription_handler)
-            {updated_state, subscription_handler} = subscribe_to_queue(resolved_state, channel_id, queue_info[:exchange], queue_info[:queue], queue_info[:callback_handler])
+            {updated_state, _subscription_handler} = subscribe_to_queue(resolved_state, channel_id, queue_info[:exchange], queue_info[:queue], queue_info[:callback_handler])
             updated_state
           end
         else
