@@ -126,11 +126,9 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
   end
 
   @doc """
-  Method to get options from the handler server
+  Method to unsubscribe from a channel
 
   ## Options
-
-  The `options` option defines the new server state
 
   The `_from` option defines the tuple {from, ref}
 
