@@ -212,7 +212,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
 
   The `api` option represents a CloudOS.ManagerAPI
 
-  The `exchange_id` option represents an MessageExchange identifier
+  The `broker_id` option represents an MessageBroker identifier
 
   ## Return Values
 
@@ -220,24 +220,93 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
   """
   @spec get_connection_option_for_broker(Map, term, String.t()) :: {term, Map}
   def get_connection_option_for_broker(state, api, broker_id) do
-    broker_id_cache = state[:brokers][broker_id]
-    {connection_options, resolved_state} = unless cache_stale?(broker_id_cache) do
-      {broker_id_cache[:connection_options], state}
-    else
-      if broker_id_cache == nil do
-        broker_id_cache = %{}
-      end
-      broker_id_cache = Map.put(broker_id_cache, :retrieval_time, :calendar.universal_time)
+    {connection_options, resolved_state} = case get_connection_options_from_cache(state, broker_id) do
+      nil ->
+        connection_options = MessagingBroker.broker_connections!(api, broker_id)
+        {connection_options, cache_connection_options(state, broker_id, connection_options)}
+      connection_options -> {connection_options, state}
+    end
+    connection_option = resolve_connection_option_for_broker(connection_options)
 
-      connection_options = MessagingBroker.broker_connections!(api, broker_id)
-      broker_id_cache = Map.put(broker_id_cache, :connection_options, connection_options)
-      broker_cache = Map.put(state[:brokers], broker_id, broker_id_cache)
-      state = Map.put(state, :brokers, broker_cache)
-
-      {connection_options, state}
+    {failover_connection_option, resolved_state} = case MessagingBroker.get_broker!(api, broker_id) do
+      nil ->
+        Logger.error("Failed to retrieve broker #{broker_id}!")
+        {nil, resolved_state}
+      broker ->
+        if broker["failover_broker_id"] != nil do
+          {failover_connection_option, resolved_state} = case get_connection_options_from_cache(resolved_state, broker["failover_broker_id"]) do
+            nil ->
+              failover_connection_options = MessagingBroker.broker_connections!(api, broker["failover_broker_id"])
+              {resolve_connection_option_for_broker(failover_connection_options), cache_connection_options(resolved_state, broker["failover_broker_id"], failover_connection_options)}
+            failover_connection_options -> {resolve_connection_option_for_broker(failover_connection_options), resolved_state}
+          end
+        else
+          {nil, resolved_state}
+        end
     end
 
-    resolve_connection_option_for_broker(resolved_state, connection_options)
+    cond do 
+      connection_option == nil -> {nil, resolved_state}
+      failover_connection_option == nil -> {connection_option, resolved_state}
+      true ->
+        {Map.merge(connection_option, %{
+          "failover_id" => failover_connection_option["id"],
+          "failover_username" => failover_connection_option["username"],
+          "failover_password" => failover_connection_option["password"],
+          "failover_host" => failover_connection_option["host"],
+          "failover_port" => failover_connection_option["port"],
+          "failover_virtual_host" => failover_connection_option["virtual_host"]
+        }), resolved_state}
+    end
+  end
+
+  @doc """
+  Method to check the cache for existing connection options
+
+  ## Options
+
+  The `api` option represents a CloudOS.ManagerAPI
+
+  The `broker_id` option represents an MessageBroker identifier
+
+  ## Return Values
+
+  Map
+  """
+  @spec get_connection_options_from_cache(Map, String.t()) :: List
+  def get_connection_options_from_cache(state, broker_id) do
+    broker_id_cache = state[:brokers][broker_id]
+    if cache_stale?(broker_id_cache) do
+      nil
+    else
+      broker_id_cache[:connection_options]
+    end    
+  end
+
+  @doc """
+  Method to cache connection options
+
+  ## Options
+
+  The `api` option represents a CloudOS.ManagerAPI
+
+  The `broker_id` option represents an MessageBroker identifier
+
+  The `connection_options` option represents the options to cache
+
+  ## Return Values
+
+  updated state
+  """
+  @spec cache_connection_options(Map, String.t(), List) :: List
+  def cache_connection_options(state, broker_id, connection_options) do
+    broker_id_cache = %{
+      retrieval_time: :calendar.universal_time,
+      connection_options: connection_options
+    }
+
+    broker_cache = Map.put(state[:brokers], broker_id, broker_id_cache)
+    Map.put(state, :brokers, broker_cache)
   end
 
   @doc """
@@ -245,18 +314,16 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
 
   ## Options
 
-  The `state` option represents the server state
-
   The `api` option represents a CloudOS.ManagerAPI
 
   The `exchange_id` option represents an MessageExchange identifier
 
   ## Return Values
 
-  {Map, state}
+  Map
   """
-  @spec resolve_connection_option_for_broker(Map, List) :: {term, Map}
-  def resolve_connection_option_for_broker(state, connection_options) do
+  @spec resolve_connection_option_for_broker(List) :: {term, Map}
+  def resolve_connection_option_for_broker(connection_options) do
     if connection_options != nil && length(connection_options) > 0 do
       idx = :random.uniform(length(connection_options))-1
       {connection_option, _cur_idx} = Enum.reduce connection_options, {nil, 0}, fn (cur_connection_option, {connection_option, cur_idx}) ->
@@ -266,9 +333,9 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
           {connection_option, cur_idx+1}
         end
       end
-      {connection_option, state}
+      connection_option
     else
-      {nil, state}
+      nil
     end
   end
 

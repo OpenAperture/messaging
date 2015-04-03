@@ -95,21 +95,16 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
   # resolve_connection_option_for_broker tests
 
   test "resolve_connection_option_for_broker - success" do
-    state = %{
-      exchanges: %{},
-      brokers: %{}
-    }
-
     brokers = [
       %{
         "id" => "1"
       }
     ]
 
-    {option, returned_state} = ConnectionOptionsResolver.resolve_connection_option_for_broker(state, brokers)
-    assert option == List.first(brokers)
-    assert returned_state == state
+    returned_option = ConnectionOptionsResolver.resolve_connection_option_for_broker(brokers)
+    assert returned_option == List.first(brokers)
   end
+  
 
   # =========================================
   # get_connection_option_for_broker tests
@@ -132,6 +127,36 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
       is_successful = cond do
         option["id"] == 1 && option["username"] == "test" -> true
         option["id"] == 2 && option["username"] == "test2" -> true
+        true -> false
+      end
+      assert is_successful == true      
+    end
+  end
+
+  test "get_connection_option_for_broker - success with failover" do
+    state = %{
+      exchanges: %{},
+      brokers: %{}
+    }
+
+    use_cassette "get_broker_connections-with-failover", custom: true do
+      {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_broker(state, ManagerAPI.get_api, "1")
+
+      assert returned_state != nil
+      assert returned_state[:brokers] != nil
+      assert returned_state[:brokers]["1"] != nil
+      assert returned_state[:brokers]["1"][:connection_options] != nil
+      assert returned_state[:brokers]["1"][:connection_options] != nil
+
+      is_successful = cond do
+        option["id"] == 1 ->
+          assert option["username"] == "test"
+          assert option["failover_username"] == "failover"
+          true
+        option["id"] == 2 ->
+          assert option["username"] == "test2" 
+          assert option["failover_username"] == "failover"
+          true
         true -> false
       end
       assert is_successful == true      
@@ -167,13 +192,14 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
       exchanges: %{}
     }
 
-    {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_broker(state, ManagerAPI.get_api, "1")
-
-    assert returned_state != nil
-    assert returned_state[:brokers] != nil
-    assert returned_state[:brokers]["1"] != nil
-    assert returned_state[:brokers]["1"][:connection_options] != nil
-    assert option == %{}
+    use_cassette "get_broker", custom: true do
+      {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_broker(state, ManagerAPI.get_api, "1")
+      assert returned_state != nil
+      assert returned_state[:brokers] != nil
+      assert returned_state[:brokers]["1"] != nil
+      assert returned_state[:brokers]["1"][:connection_options] != nil
+      assert option == %{}
+    end
   end
 
   # =========================================
@@ -289,8 +315,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
 
       assert returned_state != nil
     end
-  end   
-
+  end  
 
   # =========================================
   # handle_call({:get_for_broker}) tests
@@ -355,5 +380,6 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
     assert returned_state[:brokers]["1"] != nil
     assert returned_state[:brokers]["1"][:connection_options] != nil
     assert connection_option == %CloudOS.Messaging.AMQP.ConnectionOptions{}
-  end  
+  end    
 end
+

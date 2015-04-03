@@ -25,6 +25,7 @@ When connecting to an AMQP broker, such as RabbitMQ, you are required to specify
   username: "user",
   password: "pass",
   virtual_host: "vhost",
+  port: 12345,
   host: "host"
     }
 ```
@@ -36,6 +37,7 @@ You may also specify failover broker connection parameters:
   failover_username: "user2",
   failover_password: "pass",
   failover_virtual_host: "vhost",
+  failover_port: 12345,
   failover_host: "host2"
     }
 ```
@@ -223,10 +225,12 @@ defmodule CloudOS.Messaging.AMQP.TestConsumer do
 		password: Application.get_env(:cloudos_amqp, :password),
 		virtual_host: Application.get_env(:cloudos_amqp, :virtual_host),
 		host: Application.get_env(:cloudos_amqp, :host),
+		port: Application.get_env(:cloudos_amqp, :port),
 		failover_username: Application.get_env(:cloudos_amqp, :failover_username),
 		failover_password: Application.get_env(:cloudos_amqp, :failover_password),
 		failover_virtual_host: Application.get_env(:cloudos_amqp, :failover_virtual_host),
-		failover_host: Application.get_env(:cloudos_amqp, :failover_host)
+		failover_host: Application.get_env(:cloudos_amqp, :failover_host),
+		failover_port: Application.get_env(:cloudos_amqp, :failover_port)
 	}
 
 	use CloudOS.Messaging
@@ -293,10 +297,12 @@ defmodule CloudOS.Messaging.AMQP.TestConsumer2 do
 			password: Application.get_env(:cloudos_amqp, :password),
 			virtual_host: Application.get_env(:cloudos_amqp, :virtual_host),
 			host: Application.get_env(:cloudos_amqp, :host),
+			port: Application.get_env(:cloudos_amqp, :port),
 			failover_username: Application.get_env(:cloudos_amqp, :failover_username),
 			failover_password: Application.get_env(:cloudos_amqp, :failover_password),
 			failover_virtual_host: Application.get_env(:cloudos_amqp, :failover_virtual_host),
-			failover_host: Application.get_env(:cloudos_amqp, :failover_host)
+			failover_host: Application.get_env(:cloudos_amqp, :failover_host),
+			failover_port: Application.get_env(:cloudos_amqp, :failover_port)
 		}
 
 		case subscribe(options, @queue, fn(payload, _meta) -> handle_msg(payload, _meta) end) do

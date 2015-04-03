@@ -10,6 +10,54 @@
       "options": {
         "connect_timeout": 5000
       },
+      "url": "https://cloudos-mgr.host.co/messaging/brokers/1"
+    },
+    "response": {
+      "body": "{\"id\": 1}",
+      "headers": {
+        "Content-Type": "application/json",
+        "Content-Length": "-1",
+        "Connection": "keep-alive"
+      },
+      "status_code": ["HTTP/1.1", 200, "OK"],
+      "type": "ok"
+    }
+  },
+  {
+    "request": {
+      "body": "",
+      "headers": {
+        "Accept": "application/json",
+        "User-Agent": "cloudos-manager-api"
+      },
+      "method": "get",
+      "options": {
+        "connect_timeout": 5000
+      },
+      "url": "https://cloudos-mgr.host.co/messaging/brokers/23456"
+    },
+    "response": {
+      "body": "{\"id\": 23456}",
+      "headers": {
+        "Content-Type": "application/json",
+        "Content-Length": "-1",
+        "Connection": "keep-alive"
+      },
+      "status_code": ["HTTP/1.1", 200, "OK"],
+      "type": "ok"
+    }
+  },
+  {
+    "request": {
+      "body": "",
+      "headers": {
+        "Accept": "application/json",
+        "User-Agent": "cloudos-manager-api"
+      },
+      "method": "get",
+      "options": {
+        "connect_timeout": 5000
+      },
       "url": "https://cloudos-mgr.host.co/messaging/exchanges/1/brokers"
     },
     "response": {
