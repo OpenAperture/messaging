@@ -18,10 +18,8 @@ use Mix.Config
 config :logger, :console,
   level: :debug
 
-# It is also possible to import configuration files, relative to this
-# directory. For example, you can emulate configuration per environment
-# by uncommenting the line below and defining dev.exs, test.exs and such.
-# Configuration from the imported file will override the ones defined
-# here (which is why it is important to import them last).
-#
-#     import_config "#{Mix.env}.exs"
+config :cloudos_manager_api,
+	manager_url: System.get_env("CLOUDOS_MANAGER_URL"),
+	oauth_login_url: System.get_env("CLOUDOS_OAUTH_LOGIN_URL"),
+	oauth_client_id: System.get_env("CLOUDOS_OAUTH_CLIENT_ID"),
+	oauth_client_secret: System.get_env("CLOUDOS_OAUTH_CLIENT_SECRET")
