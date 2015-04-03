@@ -234,7 +234,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
         {nil, resolved_state}
       broker ->
         if broker["failover_broker_id"] != nil do
-          {failover_connection_option, resolved_state} = case get_connection_options_from_cache(resolved_state, broker["failover_broker_id"]) do
+          case get_connection_options_from_cache(resolved_state, broker["failover_broker_id"]) do
             nil ->
               failover_connection_options = MessagingBroker.broker_connections!(api, broker["failover_broker_id"])
               {resolve_connection_option_for_broker(failover_connection_options), cache_connection_options(resolved_state, broker["failover_broker_id"], failover_connection_options)}
