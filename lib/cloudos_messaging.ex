@@ -96,7 +96,7 @@ defmodule CloudOS.Messaging do
 		  for AMQP:
         {:ok, subscription_handler} | {:error, reason}
 		  """
-		  @spec subscribe(term, term, term) :: {:ok, term} | {:error, String.t()} 
+		  @spec subscribe(ConnectionOptions.t, Queue.t, term) :: {:ok, term} | {:error, String.t()} 
 			def subscribe(connection_options \\ @connection_options, queue, callback_handler) do
         case ConnectionOptions.type(connection_options) do
 					nil -> {:error, "The connection options do not have a type defined!"}
@@ -127,7 +127,7 @@ defmodule CloudOS.Messaging do
       for AMQP:
         :ok | {:error, reason}
       """
-      @spec subscribe(term, term, term) :: {:ok, term} | {:error, String.t()} 
+      @spec unsubscribe(ConnectionOptions.t, pid) :: :ok | {:error, String.t()} 
       def unsubscribe(connection_options \\ @connection_options, subscription_handler) do
         case ConnectionOptions.type(connection_options) do
           nil -> {:error, "The connection options do not have a type defined!"}
@@ -159,7 +159,7 @@ defmodule CloudOS.Messaging do
 		  
 		  :ok | {:error, reason}
 		  """
-		  @spec subscribe(term, term, term) :: :ok | {:error, String.t()} 
+		  @spec publish(ConnectionOptions.t, Queue.t, term) :: :ok | {:error, String.t()} 
 		  def publish(connection_options \\ @connection_options, queue, payload) do
 				case ConnectionOptions.type(connection_options) do
 					nil -> {:error, "The connection options do not have a type defined!"}

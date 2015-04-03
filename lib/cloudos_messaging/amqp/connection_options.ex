@@ -9,7 +9,38 @@ defmodule CloudOS.Messaging.AMQP.ConnectionOptions do
   This module contains the struct definition for AMQP connection options
   """
 
-	defstruct username: nil, password: nil, host: nil, virtual_host: nil, failover_username: nil, failover_password: nil, failover_host: nil, failover_virtual_host: nil
+  @type t :: %__MODULE__{}
+	defstruct id: nil, username: nil, password: nil, host: nil, port: nil, virtual_host: nil, failover_id: nil, failover_username: nil, failover_password: nil, failover_host: nil, failover_port: nil, failover_virtual_host: nil
+
+  @doc """
+  Method to convert a Map into the ConnectionOptions struct
+
+  ## Options
+
+  The `map` option defines the raw Map
+
+  ## Return Values
+
+  String
+  """
+  @spec from_map(Map) :: CloudOS.Messaging.AMQP.ConnectionOptions.t
+  def from_map(map) do
+    %CloudOS.Messaging.AMQP.ConnectionOptions{
+      id: map["id"],
+      username: map["username"],
+      password: map["password"],
+      host: map["host"],
+      port: map["port"],
+      virtual_host: map["virtual_host"],
+      failover_id: map["failover_id"],
+      failover_username: map["failover_username"],
+      failover_password: map["failover_password"],
+      failover_host: map["failover_host"],
+      failover_port: map["failover_port"],
+      failover_virtual_host: map["failover_virtual_host"],
+
+    }
+  end
 
   @doc """
   Method to retrieve the implementation-specific connection URL
@@ -31,7 +62,11 @@ defmodule CloudOS.Messaging.AMQP.ConnectionOptions do
         password = Keyword.get(options, :password, "")
         host = Keyword.get(options, :host, "")
         virtual_host = Keyword.get(options, :virtual_host, "")
-        "amqp://#{user}:#{password}@#{host}/#{virtual_host}"
+        port = case Keyword.get(options, :port) do
+        	nil -> ""
+					raw_port -> ":#{raw_port}"        	
+        end
+        "amqp://#{user}:#{password}@#{host}#{port}/#{virtual_host}"
       connection_url -> connection_url			
     end
 	end
@@ -71,6 +106,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionOptions do
 				username: options.username,
 				password: options.password,
 				host: options.host,
+				port: options.port,
 				virtual_host: options.virtual_host
 			]	  
 		end

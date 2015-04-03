@@ -84,12 +84,19 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
   
   ## Return Values
 
-  {:reply, connection_option, resolved_state}
+  {:reply, CloudOS.Messaging.ConnectionOptions.t, resolved_state}
   """
-  @spec handle_call({:get_for_broker, term, String.t(), String.t(), String.t()}, term, Map) :: {:reply, term, Map}
+  @spec handle_call({:get_for_broker, term, String.t(), String.t(), String.t()}, term, Map) :: {:reply, CloudOS.Messaging.ConnectionOptions.t, Map}
   def handle_call({:get_for_broker, api, broker_id}, _from, state) do
     {connection_option, resolved_state} = get_connection_option_for_broker(state, api, broker_id)
-    {:reply, connection_option, resolved_state}
+
+    #right now, simply convert into AMQP options
+    amqp_options = if connection_option != nil do
+      CloudOS.Messaging.AMQP.ConnectionOptions.from_map(connection_option)
+    else
+      nil
+    end
+    {:reply, amqp_options, resolved_state}
   end
 
   @doc """
@@ -111,9 +118,9 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
   
   ## Return Values
 
-  {:reply, connection_option, resolved_state}
+  {:reply, CloudOS.Messaging.ConnectionOptions, resolved_state}
   """
-  @spec handle_call({:resolve, term, String.t(), String.t(), String.t()}, term, Map) :: {:reply, term, Map}
+  @spec handle_call({:resolve, term, String.t(), String.t(), String.t()}, term, Map) :: {:reply, CloudOS.Messaging.ConnectionOptions.t, Map}
   def handle_call({:resolve, api, src_broker_id, src_exchange_id, dest_exchange_id}, _from, state) do
     #is src exchange restricted?
     {src_exchange_restrictions, resolved_state} = get_restrictions_for_exchange(state, api, src_exchange_id)
@@ -140,7 +147,13 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
         get_connection_option_for_broker(resolved_state, api, src_broker_id)
     end
 
-    {:reply, connection_option, resolved_state}
+    #right now, simply convert into AMQP options
+    amqp_options = if connection_option != nil do
+      CloudOS.Messaging.AMQP.ConnectionOptions.from_map(connection_option)
+    else
+      nil
+    end
+    {:reply, amqp_options, resolved_state}
   end
 
   @doc """

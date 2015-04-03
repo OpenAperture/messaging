@@ -240,7 +240,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
 
       {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerAPI.get_api, "1", "1", "2"}, %{}, state)
       assert connection_option != nil
-      assert (connection_option["username"] == "test" || connection_option["username"] == "test2")
+      assert (connection_option.username == "test" || connection_option.username == "test2")
 
       assert returned_state != nil
     end
@@ -255,7 +255,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
 
       {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerAPI.get_api, "1", "1", "2"}, %{}, state)
       assert connection_option != nil
-      assert (connection_option["username"] == "test" || connection_option["username"] == "test2")
+      assert (connection_option.username == "test" || connection_option.username == "test2")
 
       assert returned_state != nil
     end
@@ -270,7 +270,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
 
       {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerAPI.get_api, "1", "1", "2"}, %{}, state)
       assert connection_option != nil
-      assert (connection_option["username"] == "test" || connection_option["username"] == "test2")
+      assert (connection_option.username == "test" || connection_option.username == "test2")
 
       assert returned_state != nil
     end
@@ -285,9 +285,75 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
 
       {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerAPI.get_api, "1", "1", "2"}, %{}, state)
       assert connection_option != nil
-      assert (connection_option["username"] == "test" || connection_option["username"] == "test2")
+      assert (connection_option.username == "test" || connection_option.username == "test2")
 
       assert returned_state != nil
     end
   end   
+
+
+  # =========================================
+  # handle_call({:get_for_broker}) tests
+
+  test "handle_call({:get_for_broker}) - success" do
+    state = %{
+      exchanges: %{},
+      brokers: %{}
+    }
+
+    use_cassette "get_broker_connections", custom: true do
+      {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:get_for_broker, ManagerAPI.get_api, "1"}, %{}, state)
+
+      assert returned_state != nil
+      assert returned_state[:brokers] != nil
+      assert returned_state[:brokers]["1"] != nil
+      assert returned_state[:brokers]["1"][:connection_options] != nil
+      assert returned_state[:brokers]["1"][:connection_options] != nil
+
+      is_successful = cond do
+        connection_option.id == 1 && connection_option.username == "test" -> true
+        connection_option.id == 2 && connection_option.username == "test2" -> true
+        true -> false
+      end
+      assert is_successful == true      
+    end
+  end
+
+  test "handle_call({:get_for_broker}) - failure" do
+    state = %{
+      exchanges: %{},
+      brokers: %{}
+    }
+
+    use_cassette "get_broker_connections_failure", custom: true do
+      {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:get_for_broker, ManagerAPI.get_api, "1"}, %{}, state)
+
+      assert returned_state != nil
+      assert returned_state[:brokers] != nil
+      assert returned_state[:brokers]["1"] != nil
+      assert returned_state[:brokers]["1"][:connection_options] == nil
+
+      assert connection_option == nil
+    end
+  end
+
+  test "handle_call({:get_for_broker}) - success cached" do
+    state = %{
+      brokers: %{
+        "1" => %{
+          retrieval_time: :calendar.universal_time,
+          connection_options: [%{}]
+        }
+      },
+      exchanges: %{}
+    }
+
+    {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:get_for_broker, ManagerAPI.get_api, "1"}, %{}, state)
+
+    assert returned_state != nil
+    assert returned_state[:brokers] != nil
+    assert returned_state[:brokers]["1"] != nil
+    assert returned_state[:brokers]["1"][:connection_options] != nil
+    assert connection_option == %CloudOS.Messaging.AMQP.ConnectionOptions{}
+  end  
 end
