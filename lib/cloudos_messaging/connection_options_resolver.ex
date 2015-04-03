@@ -222,7 +222,13 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
   def get_connection_option_for_broker(state, api, broker_id) do
     {connection_options, resolved_state} = case get_connection_options_from_cache(state, broker_id) do
       nil ->
+        Logger.debug("Retrieving connection options for broker #{broker_id}...")
         connection_options = MessagingBroker.broker_connections!(api, broker_id)
+        if connection_options == nil do
+          Logger.error("No connection options have been defined for broker #{broker_id}!")
+        else
+          Logger.debug("There are length(connection_options) connection options defined for broker #{broker_id}!")
+        end
         {connection_options, cache_connection_options(state, broker_id, connection_options)}
       connection_options -> {connection_options, state}
     end
