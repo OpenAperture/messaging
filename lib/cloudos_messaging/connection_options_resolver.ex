@@ -227,7 +227,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
         if connection_options == nil do
           Logger.error("No connection options have been defined for broker #{broker_id}!")
         else
-          Logger.debug("There are length(connection_options) connection options defined for broker #{broker_id}!")
+          Logger.debug("There are #{length(connection_options)} connection options defined for broker #{broker_id}")
         end
         {connection_options, cache_connection_options(state, broker_id, connection_options)}
       connection_options -> {connection_options, state}
