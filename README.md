@@ -48,6 +48,8 @@ When specifying a failover connection, make sure to also specify the failover ex
 %CloudOS.Messaging.AMQP.Exchange{name: "exchange-name", failover_name: "failover-exchange-name"), options: [:durable]}
 ```
 
+You may utilize the CloudOS.Messaging.AMQP.ExchangeResolver to cache and quickly retrieve CloudOS.Messaging.AMQP.Exchange objects as needed, with a simple .get call.  This will resolve both the primary and failover exchange(s).
+
 #### Dynamic Options Resolution
 
 Managing sets of connection options can be complicated.  This library provides a component to help resolve the appropriate connection options:  CloudOS.Messaging.ConnectionOptionsResolver.

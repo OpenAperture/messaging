@@ -55,7 +55,8 @@ defmodule CloudOS.Messaging do
     children = [
       # Define workers and child supervisors to be supervised
       supervisor(CloudOS.Messaging.AMQP.ConnectionSupervisor, []),
-      worker(CloudOS.Messaging.ConnectionOptionsResolver, [])
+      worker(CloudOS.Messaging.ConnectionOptionsResolver, []),
+      worker(CloudOS.Messaging.AMQP.ExchangeResolver, [])
     ]
 
     opts = [strategy: :one_for_one, name: CloudosBuildServer.Supervisor]
