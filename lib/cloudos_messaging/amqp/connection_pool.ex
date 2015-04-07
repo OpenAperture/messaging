@@ -1017,6 +1017,10 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   """  
   @spec create_connection(List, term) :: {term, term}
   def create_connection(connection_options, state) do
+    #port is optional, but if it's nil we need to remove it before connecting
+    if connection_options[:port] == nil do
+      connection_options = Keyword.delete(connection_options, :port)
+    end
     case Connection.open(connection_options) do
       {:ok, connection} -> 
         Logger.debug("Successfully created connection to #{connection_options[:host]}")
