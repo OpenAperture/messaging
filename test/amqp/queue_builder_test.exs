@@ -3,7 +3,6 @@ defmodule CloudOS.Messaging.AMQP.QueueBuilderTest do
   use ExVCR.Mock, adapter: ExVCR.Adapter.Httpc, options: [clear_mock: true]
 
   alias CloudOS.Messaging.AMQP.QueueBuilder
-  alias CloudOS.Messaging.AMQP.Exchange
   alias CloudOS.Messaging.AMQP.ExchangeResolver
 
   alias CloudOS.ManagerAPI
