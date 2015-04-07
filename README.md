@@ -14,6 +14,16 @@ Currently this library utlizes an AMQP client as its primary communication mecha
 
 The messaging component is defined via the "using" macro, and can be included in other modules.  Remember to add the :cloudos_messaging application to your Elixir application or module.
 
+### Queue
+
+The foundational component of the Messaging system module is a Queue, represented by the CloudOS.Messaging.Queue struct.  You can cr3eate these structs manually or use the CloudOS.Messaging.AMQP.QueueBuilder to create and populate the struct for you:
+
+```iex
+queue_name = "test_queue"
+exchange_id = "1"
+queue = CloudOS.Messaging.AMQP.QueueBuilder.build(CloudOS.ManagerAPI.get_api, queue_name, exchange_id)
+```
+
 ### Connection Options
 
 #### AMQP Connections
