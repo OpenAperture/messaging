@@ -565,7 +565,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
           #attempt to restart the connection
           restart_connection(resolved_state, connection_url, retry_cnt)
         true ->
-          Logger.error("Process #{ref} is down, but not managed by this connection pool")
+          Logger.error("Process #{inspect ref} is down, but not managed by this connection pool")
           state
       end
 
