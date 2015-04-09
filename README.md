@@ -1,5 +1,7 @@
 # OpenAperture.Messaging
 
+[![Build Status](https://semaphoreci.com/api/v1/projects/71436c37-54dc-4b06-afd8-0de1a58f541c/394863/badge.svg)](https://semaphoreci.com/perceptive/messaging)
+
 This reusable Elixir messaging library provides abstracted methods for interacting with the OpenAperture Messaging system.  
 
 Currently this library utlizes an AMQP client as its primary communication mechanism.  In addition to the base AMQP library, it provides the following features:
