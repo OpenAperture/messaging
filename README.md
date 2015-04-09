@@ -224,7 +224,7 @@ There are two patterns for using messaging:
 ### Static Connection Configuration
 
 The first pattern is to define static connection configuration that will be used in the messaging component:
-
+ 
 ```iex
 defmodule OpenAperture.Messaging.AMQP.TestConsumer do
 
