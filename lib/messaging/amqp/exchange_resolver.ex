@@ -5,17 +5,17 @@
 #
 require Logger
 
-defmodule CloudOS.Messaging.AMQP.ExchangeResolver do
+defmodule OpenAperture.Messaging.AMQP.ExchangeResolver do
 	use GenServer
 
   @moduledoc """
   This module contains the logic to resolve the appropriate MessagingExchange for a client
   """  
 
-  alias CloudOS.ManagerAPI
-  alias CloudOS.ManagerAPI.MessagingExchange
+  alias OpenAperture.ManagerApi
+  alias OpenAperture.ManagerApi.MessagingExchange
 
-  alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
+  alias OpenAperture.Messaging.AMQP.Exchange, as: AMQPExchange
 
   @doc """
   Specific start_link implementation (required by the supervisor)
@@ -36,7 +36,7 @@ defmodule CloudOS.Messaging.AMQP.ExchangeResolver do
 
   ## Options
 
-  The `api` option defines the CloudOS.ManagerAPI process
+  The `api` option defines the OpenAperture.ManagerApi process
 
   The `exchange_id` option defines the exchange id to retrieve
 
@@ -54,7 +54,7 @@ defmodule CloudOS.Messaging.AMQP.ExchangeResolver do
 
   ## Options
 
-  The `api` option defines the CloudOS.ManagerAPI process
+  The `api` option defines the OpenAperture.ManagerApi process
 
   The `exchange_id` option defines the MessagingExchange identifier
 
@@ -117,7 +117,7 @@ defmodule CloudOS.Messaging.AMQP.ExchangeResolver do
       exchange ->
         amqp_exchange = %AMQPExchange{name: exchange["name"], options: [:durable]}  
         if exchange["failover_exchange_id"] != nil do
-          case MessagingExchange.get_exchange!(ManagerAPI.get_api, exchange["failover_exchange_id"]) do
+          case MessagingExchange.get_exchange!(ManagerApi.get_api, exchange["failover_exchange_id"]) do
             nil -> amqp_exchange
             failover_exchange -> %AMQPExchange{name: exchange["name"], failover_name: failover_exchange["name"], options: [:durable]}
           end

@@ -1,8 +1,8 @@
-defmodule CloudOS.Messaging.AMQP.ConnectionOptionsTest do
+defmodule OpenAperture.Messaging.AMQP.ConnectionOptionsTest do
   use ExUnit.Case, async: false
 
-  alias CloudOS.Messaging.ConnectionOptions
-  alias CloudOS.Messaging.AMQP.ConnectionOptions, as: AMQPOptions
+  alias OpenAperture.Messaging.ConnectionOptions
+  alias OpenAperture.Messaging.AMQP.ConnectionOptions, as: AMQPOptions
 
   test "convert empty struct to list" do
     options = %AMQPOptions{}

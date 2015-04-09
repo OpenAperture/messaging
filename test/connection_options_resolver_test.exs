@@ -1,17 +1,17 @@
-defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
+defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
   use ExUnit.Case, async: false
   use ExVCR.Mock, adapter: ExVCR.Adapter.Httpc, options: [clear_mock: true]
 
-  alias CloudOS.ManagerAPI
-  alias CloudOS.Messaging.ConnectionOptionsResolver
+  alias OpenAperture.ManagerApi
+  alias OpenAperture.Messaging.ConnectionOptionsResolver
 
   setup_all _context do
-    :meck.new(CloudosAuth.Client, [:passthrough])
-    :meck.expect(CloudosAuth.Client, :get_token, fn _, _, _ -> "abc" end)
+    :meck.new(OpenAperture.Auth.Client, [:passthrough])
+    :meck.expect(OpenAperture.Auth.Client, :get_token, fn _, _, _ -> "abc" end)
 
     on_exit _context, fn ->
       try do
-        :meck.unload CloudosAuth.Client
+        :meck.unload OpenAperture.Auth.Client
       rescue _ -> IO.puts "" end
     end    
     :ok
@@ -27,7 +27,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
     }
 
     use_cassette "exchange_brokers", custom: true do
-      {brokers, returned_state} = ConnectionOptionsResolver.get_restrictions_for_exchange(state, ManagerAPI.get_api, "1")
+      {brokers, returned_state} = ConnectionOptionsResolver.get_restrictions_for_exchange(state, ManagerApi.get_api, "1")
 
       assert returned_state != nil
       assert returned_state[:exchanges] != nil
@@ -57,7 +57,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
     }
 
     use_cassette "exchange_brokers_failure", custom: true do
-      {brokers, returned_state} = ConnectionOptionsResolver.get_restrictions_for_exchange(state, ManagerAPI.get_api, "1")
+      {brokers, returned_state} = ConnectionOptionsResolver.get_restrictions_for_exchange(state, ManagerApi.get_api, "1")
 
       assert returned_state != nil
       assert returned_state[:exchanges] != nil
@@ -80,7 +80,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
       brokers: %{}
     }
 
-    {brokers, returned_state} = ConnectionOptionsResolver.get_restrictions_for_exchange(state, ManagerAPI.get_api, "1")
+    {brokers, returned_state} = ConnectionOptionsResolver.get_restrictions_for_exchange(state, ManagerApi.get_api, "1")
 
     assert returned_state != nil
     assert returned_state[:exchanges] != nil
@@ -116,7 +116,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
     }
 
     use_cassette "get_broker_connections", custom: true do
-      {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_broker(state, ManagerAPI.get_api, "1")
+      {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_broker(state, ManagerApi.get_api, "1")
 
       assert returned_state != nil
       assert returned_state[:brokers] != nil
@@ -140,7 +140,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
     }
 
     use_cassette "get_broker_connections-with-failover", custom: true do
-      {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_broker(state, ManagerAPI.get_api, "1")
+      {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_broker(state, ManagerApi.get_api, "1")
 
       assert returned_state != nil
       assert returned_state[:brokers] != nil
@@ -170,7 +170,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
     }
 
     use_cassette "get_broker_connections_failure", custom: true do
-      {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_broker(state, ManagerAPI.get_api, "1")
+      {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_broker(state, ManagerApi.get_api, "1")
 
       assert returned_state != nil
       assert returned_state[:brokers] != nil
@@ -193,7 +193,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
     }
 
     use_cassette "get_broker", custom: true do
-      {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_broker(state, ManagerAPI.get_api, "1")
+      {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_broker(state, ManagerApi.get_api, "1")
       assert returned_state != nil
       assert returned_state[:brokers] != nil
       assert returned_state[:brokers]["1"] != nil
@@ -212,7 +212,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
     }
 
     use_cassette "get_broker_connections", custom: true do
-      {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_brokers(state, ManagerAPI.get_api, [%{"id"=> "1"}])
+      {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_brokers(state, ManagerApi.get_api, [%{"id"=> "1"}])
 
       assert returned_state != nil
       assert returned_state[:brokers] != nil
@@ -264,7 +264,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
         brokers: %{}
       }
 
-      {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerAPI.get_api, "1", "1", "2"}, %{}, state)
+      {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerApi.get_api, "1", "1", "2"}, %{}, state)
       assert connection_option != nil
       assert (connection_option.username == "test" || connection_option.username == "test2")
 
@@ -279,7 +279,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
         brokers: %{}
       }
 
-      {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerAPI.get_api, "1", "1", "2"}, %{}, state)
+      {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerApi.get_api, "1", "1", "2"}, %{}, state)
       assert connection_option != nil
       assert (connection_option.username == "test" || connection_option.username == "test2")
 
@@ -294,7 +294,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
         brokers: %{}
       }
 
-      {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerAPI.get_api, "1", "1", "2"}, %{}, state)
+      {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerApi.get_api, "1", "1", "2"}, %{}, state)
       assert connection_option != nil
       assert (connection_option.username == "test" || connection_option.username == "test2")
 
@@ -309,7 +309,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
         brokers: %{}
       }
 
-      {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerAPI.get_api, "1", "1", "2"}, %{}, state)
+      {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerApi.get_api, "1", "1", "2"}, %{}, state)
       assert connection_option != nil
       assert (connection_option.username == "test" || connection_option.username == "test2")
 
@@ -327,7 +327,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
     }
 
     use_cassette "get_broker_connections", custom: true do
-      {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:get_for_broker, ManagerAPI.get_api, "1"}, %{}, state)
+      {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:get_for_broker, ManagerApi.get_api, "1"}, %{}, state)
 
       assert returned_state != nil
       assert returned_state[:brokers] != nil
@@ -351,7 +351,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
     }
 
     use_cassette "get_broker_connections_failure", custom: true do
-      {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:get_for_broker, ManagerAPI.get_api, "1"}, %{}, state)
+      {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:get_for_broker, ManagerApi.get_api, "1"}, %{}, state)
 
       assert returned_state != nil
       assert returned_state[:brokers] != nil
@@ -373,13 +373,13 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolverTest do
       exchanges: %{}
     }
 
-    {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:get_for_broker, ManagerAPI.get_api, "1"}, %{}, state)
+    {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:get_for_broker, ManagerApi.get_api, "1"}, %{}, state)
 
     assert returned_state != nil
     assert returned_state[:brokers] != nil
     assert returned_state[:brokers]["1"] != nil
     assert returned_state[:brokers]["1"][:connection_options] != nil
-    assert connection_option == %CloudOS.Messaging.AMQP.ConnectionOptions{}
+    assert connection_option == %OpenAperture.Messaging.AMQP.ConnectionOptions{}
   end    
 end
 

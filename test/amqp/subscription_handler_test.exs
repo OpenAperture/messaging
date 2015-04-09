@@ -1,16 +1,16 @@
 require Logger
 
-defmodule CloudOS.Messaging.AMQP.SubscriptionHandlerTest do
+defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
   use ExUnit.Case, async: false
 
   alias AMQP.Basic
   alias AMQP.Exchange
   alias AMQP.Queue
 
-  alias CloudOS.Messaging.AMQP.SubscriptionHandler
+  alias OpenAperture.Messaging.AMQP.SubscriptionHandler
 
-  alias CloudOS.Messaging.Queue, as: MessagingQueue
-  alias CloudOS.Messaging.AMQP.Exchange, as: MessagingExchange
+  alias OpenAperture.Messaging.Queue, as: MessagingQueue
+  alias OpenAperture.Messaging.AMQP.Exchange, as: MessagingExchange
 
   setup do
     Application.ensure_started(:logger)

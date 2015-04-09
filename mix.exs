@@ -1,12 +1,12 @@
-defmodule CloudOS.Messaging.Mixfile do
+defmodule OpenAperture.Messaging.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :cloudos_messaging,
+    [app: :openaperture_messaging,
      version: "0.0.1",
      elixir: "~> 1.0",
      elixirc_paths: ["lib"],
-     escript: [main_module: CloudOS.Messaging],
+     escript: [main_module: OpenAperture.Messaging],
      deps: deps]
   end
 
@@ -15,8 +15,8 @@ defmodule CloudOS.Messaging.Mixfile do
   # Type `mix help compile.app` for more information
   def application do
     [
-      mod: { CloudOS.Messaging, [] },
-      applications: [:logger, :cloudos_manager_api]
+      mod: { OpenAperture.Messaging, [] },
+      applications: [:logger, :openaperture_manager_api]
     ]
   end
 
@@ -34,8 +34,8 @@ defmodule CloudOS.Messaging.Mixfile do
       {:amqp, "0.1.0"},
       {:uuid, "~> 0.1.5" },
 
-      {:cloudos_manager_api, git: "https://#{System.get_env("GITHUB_OAUTH_TOKEN")}:x-oauth-basic@github.com/UmbrellaCorporation-SecretProjectLab/cloudos_manager_api.git", 
-      ref: "1bbd406753efecf4fbdf0c41e19bfb39cb76b79d"},
+      {:openaperture_manager_api, git: "https://#{System.get_env("GITHUB_OAUTH_TOKEN")}:x-oauth-basic@github.com/OpenAperture/manager_api.git", 
+      ref: "f67a4570ec4b46cb2b2bb746924b322eec1e3178"},
 
       #test dependencies
       {:exvcr, github: "parroty/exvcr", only: :test},

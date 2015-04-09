@@ -5,7 +5,7 @@
 #
 require Logger
 
-defmodule CloudOS.Messaging.AMQP.ConnectionSupervisor do
+defmodule OpenAperture.Messaging.AMQP.ConnectionSupervisor do
   use Supervisor
 
   @moduledoc """
@@ -23,7 +23,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionSupervisor do
   """
   @spec start_link() :: {:ok, pid} | {:error, String.t()} 
   def start_link do
-    Logger.info("Starting CloudOS.Messaging.AMQP supervisor...")
+    Logger.info("Starting OpenAperture.Messaging.AMQP supervisor...")
     :supervisor.start_link(__MODULE__, [])
   end
 
@@ -44,7 +44,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionSupervisor do
 
     children = [
       # Define workers and child supervisors to be supervised
-      worker(CloudOS.Messaging.AMQP.ConnectionPools, []),
+      worker(OpenAperture.Messaging.AMQP.ConnectionPools, []),
     ]
 
     opts = [strategy: :one_for_one, name: __MODULE__]

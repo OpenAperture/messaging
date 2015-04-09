@@ -1,19 +1,19 @@
 require Logger
 
-defmodule CloudOS.Messaging.AMQP.TestConsumerPub do
+defmodule OpenAperture.Messaging.AMQP.TestConsumerPub do
 
-	alias CloudOS.Messaging.Queue
-	alias CloudOS.Messaging.ConnectionOptions
-	alias CloudOS.Messaging.AMQP.ConnectionOptions
-	alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
+	alias OpenAperture.Messaging.Queue
+	alias OpenAperture.Messaging.ConnectionOptions
+	alias OpenAperture.Messaging.AMQP.ConnectionOptions
+	alias OpenAperture.Messaging.AMQP.Exchange, as: AMQPExchange
 
-	@connection_options %CloudOS.Messaging.AMQP.ConnectionOptions{
-		username: Application.get_env(:cloudos_amqp, :username),
-		password: Application.get_env(:cloudos_amqp, :password),
-		virtual_host: Application.get_env(:cloudos_amqp, :virtual_host),
-		host: Application.get_env(:cloudos_amqp, :host)
+	@connection_options %OpenAperture.Messaging.AMQP.ConnectionOptions{
+		username: Application.get_env(:openaperture_amqp, :username),
+		password: Application.get_env(:openaperture_amqp, :password),
+		virtual_host: Application.get_env(:openaperture_amqp, :virtual_host),
+		host: Application.get_env(:openaperture_amqp, :host)
 	}
-	use CloudOS.Messaging
+	use OpenAperture.Messaging
 
 	@queue %Queue{
 		name: "test_queue", 
@@ -49,14 +49,14 @@ defmodule CloudOS.Messaging.AMQP.TestConsumerPub do
 	end	
 end
 
-defmodule CloudOS.Messaging.AMQP.TestConsumerPub2 do
-	alias CloudOS.Messaging.Queue
-	alias CloudOS.Messaging.ConnectionOptions
-	alias CloudOS.Messaging.AMQP.ConnectionOptions
-	alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
+defmodule OpenAperture.Messaging.AMQP.TestConsumerPub2 do
+	alias OpenAperture.Messaging.Queue
+	alias OpenAperture.Messaging.ConnectionOptions
+	alias OpenAperture.Messaging.AMQP.ConnectionOptions
+	alias OpenAperture.Messaging.AMQP.Exchange, as: AMQPExchange
 
 	@connection_options nil
-	use CloudOS.Messaging
+	use OpenAperture.Messaging
 
 	@queue %Queue{
 		name: "test_queue", 
@@ -68,11 +68,11 @@ defmodule CloudOS.Messaging.AMQP.TestConsumerPub2 do
 
 	def subscribe() do
 		IO.puts("subscribe in TestConsumer2")
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
-			username: Application.get_env(:cloudos_amqp, :username),
-			password: Application.get_env(:cloudos_amqp, :password),
-			virtual_host: Application.get_env(:cloudos_amqp, :virtual_host),
-			host: Application.get_env(:cloudos_amqp, :host)
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
+			username: Application.get_env(:openaperture_amqp, :username),
+			password: Application.get_env(:openaperture_amqp, :password),
+			virtual_host: Application.get_env(:openaperture_amqp, :virtual_host),
+			host: Application.get_env(:openaperture_amqp, :host)
 		}
 
 		case subscribe(options, @queue, fn(payload, _meta) -> handle_msg(payload, _meta) end) do
@@ -86,11 +86,11 @@ defmodule CloudOS.Messaging.AMQP.TestConsumerPub2 do
 	end
 
 	def send_message(payload) do
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
-			username: Application.get_env(:cloudos_amqp, :username),
-			password: Application.get_env(:cloudos_amqp, :password),
-			virtual_host: Application.get_env(:cloudos_amqp, :virtual_host),
-			host: Application.get_env(:cloudos_amqp, :host)
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
+			username: Application.get_env(:openaperture_amqp, :username),
+			password: Application.get_env(:openaperture_amqp, :password),
+			virtual_host: Application.get_env(:openaperture_amqp, :virtual_host),
+			host: Application.get_env(:openaperture_amqp, :host)
 		}
 
 		IO.puts("sending message:  #{inspect payload}")
@@ -107,19 +107,19 @@ defmodule CloudOS.Messaging.AMQP.TestConsumerPub2 do
 end
 
 
-defmodule CloudOS.Messaging.AMQP.PublishTest do
+defmodule OpenAperture.Messaging.AMQP.PublishTest do
   use ExUnit.Case
   @moduletag :external
 
-  alias CloudOS.Messaging.AMQP.TestConsumerPub
-  alias CloudOS.Messaging.AMQP.TestConsumerPub2
+  alias OpenAperture.Messaging.AMQP.TestConsumerPub
+  alias OpenAperture.Messaging.AMQP.TestConsumerPub2
 
   test "the truth" do
     assert 1 + 1 == 2
   end
 
   test "subscribe" do
-  	CloudOS.Messaging.AMQP.ConnectionPools.start_link
+  	OpenAperture.Messaging.AMQP.ConnectionPools.start_link
 
 		spawn_link fn -> publish_message(0, 99, "first") end
 		spawn_link fn -> publish_message(100, 199, "second") end

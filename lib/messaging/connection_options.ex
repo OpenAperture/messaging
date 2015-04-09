@@ -3,7 +3,7 @@
 #
 # This module contains the protocol definition for Messaging connection options
 #
-defprotocol CloudOS.Messaging.ConnectionOptions do
+defprotocol OpenAperture.Messaging.ConnectionOptions do
 
   @moduledoc """
   This module contains the protocol definition for Messaging connection options

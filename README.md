@@ -1,6 +1,6 @@
-# CloudOS.Messaging
+# OpenAperture.Messaging
 
-This reusable Elixir messaging library provides abstracted methods for interacting with the CloudOS Messaging system.  
+This reusable Elixir messaging library provides abstracted methods for interacting with the OpenAperture Messaging system.  
 
 Currently this library utlizes an AMQP client as its primary communication mechanism.  In addition to the base AMQP library, it provides the following features:
 
@@ -12,16 +12,16 @@ Currently this library utlizes an AMQP client as its primary communication mecha
 
 ## Usage
 
-The messaging component is defined via the "using" macro, and can be included in other modules.  Remember to add the :cloudos_messaging application to your Elixir application or module.
+The messaging component is defined via the "using" macro, and can be included in other modules.  Remember to add the :openaperture_messaging application to your Elixir application or module.
 
 ### Queue
 
-The foundational component of the Messaging system module is a Queue, represented by the CloudOS.Messaging.Queue struct.  You can cr3eate these structs manually or use the CloudOS.Messaging.AMQP.QueueBuilder to create and populate the struct for you:
+The foundational component of the Messaging system module is a Queue, represented by the OpenAperture.Messaging.Queue struct.  You can cr3eate these structs manually or use the OpenAperture.Messaging.AMQP.QueueBuilder to create and populate the struct for you:
 
 ```iex
 queue_name = "test_queue"
 exchange_id = "1"
-queue = CloudOS.Messaging.AMQP.QueueBuilder.build(CloudOS.ManagerAPI.get_api, queue_name, exchange_id)
+queue = OpenAperture.Messaging.AMQP.QueueBuilder.build(OpenAperture.ManagerApi.get_api, queue_name, exchange_id)
 ```
 
 ### Connection Options
@@ -31,7 +31,7 @@ queue = CloudOS.Messaging.AMQP.QueueBuilder.build(CloudOS.ManagerAPI.get_api, qu
 When connecting to an AMQP broker, such as RabbitMQ, you are required to specify the following parameters:
 
 ```iex
-%CloudOS.Messaging.AMQP.ConnectionOptions{
+%OpenAperture.Messaging.AMQP.ConnectionOptions{
   username: "user",
   password: "pass",
   virtual_host: "vhost",
@@ -43,7 +43,7 @@ When connecting to an AMQP broker, such as RabbitMQ, you are required to specify
 You may also specify failover broker connection parameters:
 
 ```iex
-%CloudOS.Messaging.AMQP.ConnectionOptions{
+%OpenAperture.Messaging.AMQP.ConnectionOptions{
   failover_username: "user2",
   failover_password: "pass",
   failover_virtual_host: "vhost",
@@ -55,27 +55,27 @@ You may also specify failover broker connection parameters:
 When specifying a failover connection, make sure to also specify the failover exchange (make sure to specify the name, even if it is the same):
 
 ```iex
-%CloudOS.Messaging.AMQP.Exchange{name: "exchange-name", failover_name: "failover-exchange-name"), options: [:durable]}
+%OpenAperture.Messaging.AMQP.Exchange{name: "exchange-name", failover_name: "failover-exchange-name"), options: [:durable]}
 ```
 
-You may utilize the CloudOS.Messaging.AMQP.ExchangeResolver to cache and quickly retrieve CloudOS.Messaging.AMQP.Exchange objects as needed, with a simple .get call.  This will resolve both the primary and failover exchange(s).
+You may utilize the OpenAperture.Messaging.AMQP.ExchangeResolver to cache and quickly retrieve OpenAperture.Messaging.AMQP.Exchange objects as needed, with a simple .get call.  This will resolve both the primary and failover exchange(s).
 
 #### Dynamic Options Resolution
 
-Managing sets of connection options can be complicated.  This library provides a component to help resolve the appropriate connection options:  CloudOS.Messaging.ConnectionOptionsResolver.
+Managing sets of connection options can be complicated.  This library provides a component to help resolve the appropriate connection options:  OpenAperture.Messaging.ConnectionOptionsResolver.
 
-The ConnectionOptionsResolver provides 2 methods to retrieve connections (you must provide a CloudOS.ManagerAPI (api param) with your own server connection information):
+The ConnectionOptionsResolver provides 2 methods to retrieve connections (you must provide a OpenAperture.ManagerApi (api param) with your own server connection information):
 
 * Retrieve connection options for a specific broker
 
 ```iex
-CloudOS.Messaging.ConnectionOptionsResolver.get_for_broker(api, broker_id)
+OpenAperture.Messaging.ConnectionOptionsResolver.get_for_broker(api, broker_id)
 ```
 
 * Resolve the connection options between a set of exchanges (and  broker)
 
 ```iex
-CloudOS.Messaging.ConnectionOptionsResolver.resolve(api, src_broker_id, src_exchange_id, dest_exchange_id)
+OpenAperture.Messaging.ConnectionOptionsResolver.resolve(api, src_broker_id, src_exchange_id, dest_exchange_id)
 ```
 
 ### Methods
@@ -92,9 +92,9 @@ subscribe(connection_options \\ @connection_options, queue, callback_handler)
 
 The `subscribe` method allows a consumer to receive messages from the messaging system.  The provides 2 arguments, depending on the usage pattern:
 
-* connection_options - CloudOS.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
+* connection_options - OpenAperture.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
 
-* queue - CloudOS.Messaging.Queue struct, containing the queue (and possibly exchange) information
+* queue - OpenAperture.Messaging.Queue struct, containing the queue (and possibly exchange) information
 
 * callback_handler - A function which receives messages from the queue.  
 	* To receive messages synchronously, and auto-acknowledged/rejected, the function must have an arity of 2 (payload, metadata):
@@ -119,15 +119,15 @@ end
 
 When receiving messages from a queue, consumers should take an Elixir mindset of "let is fail".  This module provides some basic requeueing logic that will attempt to requeue the message for another subscriber, in the event an exception is thrown from a callback handler (this behavior can be disabled by setting the requeue_on_error property on a Queue to false).  If exceptions are generated meaning that no consumer can possibly process this message, the consumer should catch these exception and return normally, which will permanently remove the message from the queue.  
 
-If exceptions are not generated, the consumer is required to either call CloudOS.Messaging.AMQP.SubscriptionHandler.acknowledge() or CloudOS.Messaging.AMQP.SubscriptionHandler.reject() after processing the message.  If not, the message will be routed to a another consumer.
+If exceptions are not generated, the consumer is required to either call OpenAperture.Messaging.AMQP.SubscriptionHandler.acknowledge() or OpenAperture.Messaging.AMQP.SubscriptionHandler.reject() after processing the message.  If not, the message will be routed to a another consumer.
 
 ```iex
 subscribe(connection_options \\ @connection_options, queue, callback_handler)
 ```
 
-* connection_options - CloudOS.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
+* connection_options - OpenAperture.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
 
-* queue - CloudOS.Messaging.Queue struct, containing the queue (and possibly exchange) information
+* queue - OpenAperture.Messaging.Queue struct, containing the queue (and possibly exchange) information
 
 * callback_handler - A function which receives messages from the queue.  
 	* To receive messages asynchronously, and without auto-acknowledgement/rejection, the function must have an arity of 3 (payload, metadata, async_info):
@@ -146,9 +146,9 @@ end
 def handle_msg(payload, meta, %{subscription_handler: subscription_handler, delivery_tag: delivery_tag} = async_info) do
 	try do
 		IO.puts("TestConsumer:  received message #{inspect payload}")
-		CloudOS.Messaging.AMQP.SubscriptionHandler.acknowledge(subscription_handler, delivery_tag)
+		OpenAperture.Messaging.AMQP.SubscriptionHandler.acknowledge(subscription_handler, delivery_tag)
 	rescue e in _ ->
-		CloudOS.Messaging.AMQP.SubscriptionHandler.reject(subscription_handler, delivery_tag)
+		OpenAperture.Messaging.AMQP.SubscriptionHandler.reject(subscription_handler, delivery_tag)
 	end
 end
 ```
@@ -161,7 +161,7 @@ unsubscribe(connection_options \\ @connection_options, subscription_handler)
 
 To unsubscribe from  receiving updates, simply pass the subscription_handler (received during subscription) into the method:
 
-* connection_options - CloudOS.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
+* connection_options - OpenAperture.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
 
 * subscription_handler - SubscriptionHandler (obtained from `subscribe`)
 
@@ -184,9 +184,9 @@ end
 def handle_msg(payload, meta, %{subscription_handler: subscription_handler, delivery_tag: delivery_tag} = async_info) do
 	try do
 		IO.puts("TestConsumer:  received message #{inspect payload}")
-		CloudOS.Messaging.AMQP.SubscriptionHandler.acknowledge(subscription_handler, delivery_tag)
+		OpenAperture.Messaging.AMQP.SubscriptionHandler.acknowledge(subscription_handler, delivery_tag)
 	rescue e in _ ->
-		CloudOS.Messaging.AMQP.SubscriptionHandler.reject(subscription_handler, delivery_tag)
+		OpenAperture.Messaging.AMQP.SubscriptionHandler.reject(subscription_handler, delivery_tag)
 	end
 end
 ```
@@ -199,9 +199,9 @@ publish(connection_options \\ @connection_options, queue, payload)
 
 The `publish` method allows a consumer to push messages into the messaging system.  The provides 2/3 arguments, depending on the usage pattern:
 
-* connection_options - CloudOS.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
+* connection_options - OpenAperture.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
 
-* queue - CloudOS.Messaging.Queue struct, containing the queue (and possibly exchange) information
+* queue - OpenAperture.Messaging.Queue struct, containing the queue (and possibly exchange) information
 
 * payload - The term or primitive you want to publish
 
@@ -213,7 +213,7 @@ close_connection(connection_options \\ @connection_options)
 
 The `close_connection` method allows a consumer to close the connection (including subscriptions, channels, and connections) associated with a set of Connection Options
 
-* connection_options - CloudOS.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
+* connection_options - OpenAperture.Messaging.ConnectionOptions struct, containing the connection username, password, etc...  This struct can also define the failover connection options.  Defaults to the @connection_options attribute.
 
 ## Usage Patterns
 
@@ -224,28 +224,28 @@ There are two patterns for using messaging:
 The first pattern is to define static connection configuration that will be used in the messaging component:
 
 ```iex
-defmodule CloudOS.Messaging.AMQP.TestConsumer do
+defmodule OpenAperture.Messaging.AMQP.TestConsumer do
 
-	alias CloudOS.Messaging.Queue
-	alias CloudOS.Messaging.ConnectionOptions
-	alias CloudOS.Messaging.AMQP.ConnectionOptions
-	alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
+	alias OpenAperture.Messaging.Queue
+	alias OpenAperture.Messaging.ConnectionOptions
+	alias OpenAperture.Messaging.AMQP.ConnectionOptions
+	alias OpenAperture.Messaging.AMQP.Exchange, as: AMQPExchange
 
 	#Note that @connection_options must be declared BEFORE the 'use' statement
-	@connection_options %CloudOS.Messaging.AMQP.ConnectionOptions{
-		username: Application.get_env(:cloudos_amqp, :username),
-		password: Application.get_env(:cloudos_amqp, :password),
-		virtual_host: Application.get_env(:cloudos_amqp, :virtual_host),
-		host: Application.get_env(:cloudos_amqp, :host),
-		port: Application.get_env(:cloudos_amqp, :port),
-		failover_username: Application.get_env(:cloudos_amqp, :failover_username),
-		failover_password: Application.get_env(:cloudos_amqp, :failover_password),
-		failover_virtual_host: Application.get_env(:cloudos_amqp, :failover_virtual_host),
-		failover_host: Application.get_env(:cloudos_amqp, :failover_host),
-		failover_port: Application.get_env(:cloudos_amqp, :failover_port)
+	@connection_options %OpenAperture.Messaging.AMQP.ConnectionOptions{
+		username: Application.get_env(:openaperture_amqp, :username),
+		password: Application.get_env(:openaperture_amqp, :password),
+		virtual_host: Application.get_env(:openaperture_amqp, :virtual_host),
+		host: Application.get_env(:openaperture_amqp, :host),
+		port: Application.get_env(:openaperture_amqp, :port),
+		failover_username: Application.get_env(:openaperture_amqp, :failover_username),
+		failover_password: Application.get_env(:openaperture_amqp, :failover_password),
+		failover_virtual_host: Application.get_env(:openaperture_amqp, :failover_virtual_host),
+		failover_host: Application.get_env(:openaperture_amqp, :failover_host),
+		failover_port: Application.get_env(:openaperture_amqp, :failover_port)
 	}
 
-	use CloudOS.Messaging
+	use OpenAperture.Messaging
 
 	@queue %Queue{
 		name: "test_queue", 
@@ -285,15 +285,15 @@ end
 The second pattern is to pass connection configuration into the various methods of the messaging component:
 
 ```iex
-defmodule CloudOS.Messaging.AMQP.TestConsumer2 do
-	alias CloudOS.Messaging.Queue
-	alias CloudOS.Messaging.ConnectionOptions
-	alias CloudOS.Messaging.AMQP.ConnectionOptions
-	alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
+defmodule OpenAperture.Messaging.AMQP.TestConsumer2 do
+	alias OpenAperture.Messaging.Queue
+	alias OpenAperture.Messaging.ConnectionOptions
+	alias OpenAperture.Messaging.AMQP.ConnectionOptions
+	alias OpenAperture.Messaging.AMQP.Exchange, as: AMQPExchange
 
 	#Set @connection_options to nil BEFORE the 'use' statement to avoid the warning
 	@connection_options nil
-	use CloudOS.Messaging
+	use OpenAperture.Messaging
 
 	@queue %Queue{
 		name: "test_queue", 
@@ -304,17 +304,17 @@ defmodule CloudOS.Messaging.AMQP.TestConsumer2 do
 	}
 
 	def subscribe() do
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
-			username: Application.get_env(:cloudos_amqp, :username),
-			password: Application.get_env(:cloudos_amqp, :password),
-			virtual_host: Application.get_env(:cloudos_amqp, :virtual_host),
-			host: Application.get_env(:cloudos_amqp, :host),
-			port: Application.get_env(:cloudos_amqp, :port),
-			failover_username: Application.get_env(:cloudos_amqp, :failover_username),
-			failover_password: Application.get_env(:cloudos_amqp, :failover_password),
-			failover_virtual_host: Application.get_env(:cloudos_amqp, :failover_virtual_host),
-			failover_host: Application.get_env(:cloudos_amqp, :failover_host),
-			failover_port: Application.get_env(:cloudos_amqp, :failover_port)
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
+			username: Application.get_env(:openaperture_amqp, :username),
+			password: Application.get_env(:openaperture_amqp, :password),
+			virtual_host: Application.get_env(:openaperture_amqp, :virtual_host),
+			host: Application.get_env(:openaperture_amqp, :host),
+			port: Application.get_env(:openaperture_amqp, :port),
+			failover_username: Application.get_env(:openaperture_amqp, :failover_username),
+			failover_password: Application.get_env(:copenaperture_amqp, :failover_password),
+			failover_virtual_host: Application.get_env(:openaperture_amqp, :failover_virtual_host),
+			failover_host: Application.get_env(:openaperture_amqp, :failover_host),
+			failover_port: Application.get_env(:openaperture_amqp, :failover_port)
 		}
 
 		case subscribe(options, @queue, fn(payload, _meta) -> handle_msg(payload, _meta) end) do
@@ -328,7 +328,7 @@ defmodule CloudOS.Messaging.AMQP.TestConsumer2 do
 	end
 
 	def send_message(payload) do
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
 			username: "username",
 			password: "password",
 			virtual_host: "vhost",
@@ -367,7 +367,7 @@ If you want to run the RabbitMQ system tests (i.e. hit a live system):
 1.  Define a new configuration for the "system" environment (config/system.exs) with the following contents:
 
 ```
-config :cloudos_amqp,
+config :openaperture_amqp,
   username: "user",
   password: "pass",
   virtual_host: "env",

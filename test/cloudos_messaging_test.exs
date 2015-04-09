@@ -1,35 +1,35 @@
-defmodule CloudOS.Messaging.ConsumerTest do
-	alias CloudOS.Messaging.Queue
-	alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
+defmodule OpenAperture.Messaging.ConsumerTest do
+	alias OpenAperture.Messaging.Queue
+	alias OpenAperture.Messaging.AMQP.Exchange, as: AMQPExchange
 
-	@connection_options %CloudOS.Messaging.AMQP.ConnectionOptions{
+	@connection_options %OpenAperture.Messaging.AMQP.ConnectionOptions{
 		username: "username",
 		password: "password",
 		virtual_host: "vhost",
 		host: "host"
 	}
-	use CloudOS.Messaging
+	use OpenAperture.Messaging
 end
 
-defmodule CloudOS.Messaging.Consumer2Test do
-	alias CloudOS.Messaging.Queue
-	alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
+defmodule OpenAperture.Messaging.Consumer2Test do
+	alias OpenAperture.Messaging.Queue
+	alias OpenAperture.Messaging.AMQP.Exchange, as: AMQPExchange
 
 	@connection_options nil
-	use CloudOS.Messaging
+	use OpenAperture.Messaging
 end
 
 
-defmodule CloudOS.MessagingTest do
+defmodule OpenAperture.MessagingTest do
   use ExUnit.Case, async: false
 
-	alias CloudOS.Messaging.Queue
-	alias CloudOS.Messaging.AMQP.ConnectionPool
-	alias CloudOS.Messaging.AMQP.ConnectionPools
-	alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange 
+	alias OpenAperture.Messaging.Queue
+	alias OpenAperture.Messaging.AMQP.ConnectionPool
+	alias OpenAperture.Messaging.AMQP.ConnectionPools
+	alias OpenAperture.Messaging.AMQP.Exchange, as: AMQPExchange 
 
-  alias CloudOS.Messaging.ConsumerTest
-  alias CloudOS.Messaging.Consumer2Test
+  alias OpenAperture.Messaging.ConsumerTest
+  alias OpenAperture.Messaging.Consumer2Test
 
   setup do
     Application.ensure_started(:logger)
@@ -178,7 +178,7 @@ defmodule CloudOS.MessagingTest do
 			binding_options: [routing_key: "test_queue"]
 		}
 
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
 			username: "username",
 			password: "password",
 			virtual_host: "vhost",
@@ -207,7 +207,7 @@ defmodule CloudOS.MessagingTest do
 			binding_options: [routing_key: "test_queue"]
 		}
 
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
 			username: "username",
 			password: "password",
 			virtual_host: "vhost",
@@ -233,7 +233,7 @@ defmodule CloudOS.MessagingTest do
 			binding_options: [routing_key: "test_queue"]
 		}
 
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
 			username: "username",
 			password: "password",
 			virtual_host: "vhost",
@@ -262,7 +262,7 @@ defmodule CloudOS.MessagingTest do
 			binding_options: [routing_key: "test_queue"]
 		}
 
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
 			username: "username",
 			password: "password",
 			virtual_host: "vhost",
@@ -291,7 +291,7 @@ defmodule CloudOS.MessagingTest do
 			binding_options: [routing_key: "test_queue"]
 		}
 
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
 			username: "username",
 			password: "password",
 			virtual_host: "vhost",
@@ -318,7 +318,7 @@ defmodule CloudOS.MessagingTest do
 			binding_options: [routing_key: "test_queue"]
 		}
 
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
 			username: "username",
 			password: "password",
 			virtual_host: "vhost",
@@ -347,7 +347,7 @@ defmodule CloudOS.MessagingTest do
 			binding_options: [routing_key: "test_queue"]
 		}
 
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
 			username: "username",
 			password: "password",
 			virtual_host: "vhost",
@@ -376,7 +376,7 @@ defmodule CloudOS.MessagingTest do
 			binding_options: [routing_key: "test_queue"]
 		}
 
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
 			username: "username",
 			password: "password",
 			virtual_host: "vhost",
@@ -402,7 +402,7 @@ defmodule CloudOS.MessagingTest do
 			binding_options: [routing_key: "test_queue"]
 		}
 
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
 			username: "username",
 			password: "password",
 			virtual_host: "vhost",
@@ -432,7 +432,7 @@ defmodule CloudOS.MessagingTest do
 			binding_options: [routing_key: "test_queue"]
 		}
 
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
 			username: "username",
 			password: "password",
 			virtual_host: "vhost",
@@ -462,7 +462,7 @@ defmodule CloudOS.MessagingTest do
 			binding_options: [routing_key: "test_queue"]
 		}
 
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
 			username: "username",
 			password: "password",
 			virtual_host: "vhost",
@@ -488,7 +488,7 @@ defmodule CloudOS.MessagingTest do
 			binding_options: [routing_key: "test_queue"]
 		}
 
-		options = %CloudOS.Messaging.AMQP.ConnectionOptions{
+		options = %OpenAperture.Messaging.AMQP.ConnectionOptions{
 			username: "username",
 			password: "password",
 			virtual_host: "vhost",

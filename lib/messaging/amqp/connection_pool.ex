@@ -7,13 +7,13 @@
 #
 require Logger
 
-defmodule CloudOS.Messaging.AMQP.ConnectionPool do
+defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   use GenServer
 	use AMQP
 
-  alias CloudOS.Messaging.AMQP.ConnectionPools
-  alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
-  alias CloudOS.Messaging.AMQP.SubscriptionHandler
+  alias OpenAperture.Messaging.AMQP.ConnectionPools
+  alias OpenAperture.Messaging.AMQP.Exchange, as: AMQPExchange
+  alias OpenAperture.Messaging.AMQP.SubscriptionHandler
 
   @moduledoc """
   This module contains the GenServer for a specific connection pool, which manages all connections to the AMQP host
@@ -40,7 +40,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
         Logger.debug("GenEvent start was successful, starting ConnectionPool...")
         case GenServer.start_link(__MODULE__, event_manager, []) do
           {:ok, pool} -> 
-            CloudOS.Messaging.AMQP.ConnectionPool.set_connection_options(pool, connection_options)
+            OpenAperture.Messaging.AMQP.ConnectionPool.set_connection_options(pool, connection_options)
             {:ok, pool}
           {:error, reason} -> {:error, "Failed to create ConnectionPool: #{inspect reason}"}
         end
@@ -468,7 +468,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   @spec publish_to_failover(term, String.t(), term, term) :: term
   defp publish_to_failover(state, exchange, queue, payload) do    
     Logger.debug("Rerouting publishing request to failover connection pool...")
-    CloudOS.Messaging.AMQP.ConnectionPool.publish(state[:failover_connection_pool], AMQPExchange.get_failover(exchange), queue, payload)
+    publish(state[:failover_connection_pool], AMQPExchange.get_failover(exchange), queue, payload)
     state
   end
 
@@ -493,7 +493,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   @spec subscribe_to_failover(term, String.t(), term, term) :: term
   defp subscribe_to_failover(state, exchange, queue, callback_handler) do    
     Logger.debug("Rerouting subscribe request to failover connection pool...")
-    CloudOS.Messaging.AMQP.ConnectionPool.subscribe(state[:failover_connection_pool], AMQPExchange.get_failover(exchange), queue, callback_handler)
+    subscribe(state[:failover_connection_pool], AMQPExchange.get_failover(exchange), queue, callback_handler)
     state
   end
 
@@ -512,7 +512,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPool do
   @spec unsubscribe_from_failover(term, pid) :: term
   defp unsubscribe_from_failover(state, subscription_handler) do    
     Logger.debug("Rerouting unsubscribe request to failover connection pool...")
-    CloudOS.Messaging.AMQP.ConnectionPool.unsubscribe(state[:failover_connection_pool], subscription_handler)
+    unsubscribe(state[:failover_connection_pool], subscription_handler)
     state
   end
 

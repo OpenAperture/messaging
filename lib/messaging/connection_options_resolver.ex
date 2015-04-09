@@ -5,15 +5,15 @@
 #
 require Logger
 
-defmodule CloudOS.Messaging.ConnectionOptionsResolver do
+defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 	use GenServer
 
   @moduledoc """
   This module contains the logic to resolve the appropriate connection options for a messaging client
   """  
 
-  alias CloudOS.ManagerAPI.MessagingExchange
-  alias CloudOS.ManagerAPI.MessagingBroker
+  alias OpenAperture.ManagerApi.MessagingExchange
+  alias OpenAperture.ManagerApi.MessagingBroker
 
   @doc """
   Specific start_link implementation (required by the supervisor)
@@ -34,7 +34,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
 
   ## Options
 
-  The `api` option defines the CloudOS.ManagerAPI process
+  The `api` option defines the OpenAperture.ManagerApi process
 
   The `src_broker_id` option defines the source broker identifier (where is the message going to start)
 
@@ -56,7 +56,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
 
   ## Options
 
-  The `api` option defines the CloudOS.ManagerAPI process
+  The `api` option defines the OpenAperture.ManagerApi process
 
   The `src_broker_id` option defines the source broker identifier (where is the message going to start)
 
@@ -74,7 +74,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
 
   ## Options
 
-  The `api` option defines the CloudOS.ManagerAPI process
+  The `api` option defines the OpenAperture.ManagerApi process
 
   The `broker_id` option defines the source broker identifier (where is the message going to start)
 
@@ -84,15 +84,15 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
   
   ## Return Values
 
-  {:reply, CloudOS.Messaging.ConnectionOptions.t, resolved_state}
+  {:reply, OpenAperture.Messaging.ConnectionOptions.t, resolved_state}
   """
-  @spec handle_call({:get_for_broker, term, String.t(), String.t(), String.t()}, term, Map) :: {:reply, CloudOS.Messaging.ConnectionOptions.t, Map}
+  @spec handle_call({:get_for_broker, term, String.t(), String.t(), String.t()}, term, Map) :: {:reply, OpenAperture.Messaging.ConnectionOptions.t, Map}
   def handle_call({:get_for_broker, api, broker_id}, _from, state) do
     {connection_option, resolved_state} = get_connection_option_for_broker(state, api, broker_id)
 
     #right now, simply convert into AMQP options
     amqp_options = if connection_option != nil do
-      CloudOS.Messaging.AMQP.ConnectionOptions.from_map(connection_option)
+      OpenAperture.Messaging.AMQP.ConnectionOptions.from_map(connection_option)
     else
       nil
     end
@@ -104,7 +104,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
 
   ## Options
 
-  The `api` option defines the CloudOS.ManagerAPI process
+  The `api` option defines the OpenAperture.ManagerApi process
 
   The `src_broker_id` option defines the source broker identifier (where is the message going to start)
 
@@ -118,9 +118,9 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
   
   ## Return Values
 
-  {:reply, CloudOS.Messaging.ConnectionOptions, resolved_state}
+  {:reply, OpenAperture.Messaging.ConnectionOptions, resolved_state}
   """
-  @spec handle_call({:resolve, term, String.t(), String.t(), String.t()}, term, Map) :: {:reply, CloudOS.Messaging.ConnectionOptions.t, Map}
+  @spec handle_call({:resolve, term, String.t(), String.t(), String.t()}, term, Map) :: {:reply, OpenAperture.Messaging.ConnectionOptions.t, Map}
   def handle_call({:resolve, api, src_broker_id, src_exchange_id, dest_exchange_id}, _from, state) do
     #is src exchange restricted?
     {src_exchange_restrictions, resolved_state} = get_restrictions_for_exchange(state, api, src_exchange_id)
@@ -149,7 +149,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
 
     #right now, simply convert into AMQP options
     amqp_options = if connection_option != nil do
-      CloudOS.Messaging.AMQP.ConnectionOptions.from_map(connection_option)
+      OpenAperture.Messaging.AMQP.ConnectionOptions.from_map(connection_option)
     else
       nil
     end
@@ -181,7 +181,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
 
   The `state` option represents the server state
 
-  The `api` option represents a CloudOS.ManagerAPI
+  The `api` option represents a OpenAperture.ManagerApi
 
   The `exchange_id` option represents an MessageExchange identifier
 
@@ -210,7 +210,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
 
   The `state` option represents the server state
 
-  The `api` option represents a CloudOS.ManagerAPI
+  The `api` option represents a OpenAperture.ManagerApi
 
   The `broker_id` option represents an MessageBroker identifier
 
@@ -271,7 +271,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
 
   ## Options
 
-  The `api` option represents a CloudOS.ManagerAPI
+  The `api` option represents a OpenAperture.ManagerApi
 
   The `broker_id` option represents an MessageBroker identifier
 
@@ -294,7 +294,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
 
   ## Options
 
-  The `api` option represents a CloudOS.ManagerAPI
+  The `api` option represents a OpenAperture.ManagerApi
 
   The `broker_id` option represents an MessageBroker identifier
 
@@ -320,7 +320,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
 
   ## Options
 
-  The `api` option represents a CloudOS.ManagerAPI
+  The `api` option represents a OpenAperture.ManagerApi
 
   The `exchange_id` option represents an MessageExchange identifier
 
@@ -352,7 +352,7 @@ defmodule CloudOS.Messaging.ConnectionOptionsResolver do
 
   The `state` option represents the server state
 
-  The `api` option represents a CloudOS.ManagerAPI
+  The `api` option represents a OpenAperture.ManagerApi
 
   The `exchange_id` option represents an MessageExchange identifier
 

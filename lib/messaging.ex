@@ -1,15 +1,15 @@
 #
-# == cloudos_messaging.ex
+# == openaperture_messaging.ex
 #
-# This module contains definition the CloudOS Messaging implementation
+# This module contains definition the OpenAperture Messaging implementation
 #
 require Logger
 
-defmodule CloudOS.Messaging do
+defmodule OpenAperture.Messaging do
   use Application
 
   @moduledoc """
-  This module contains definition the CloudOS Messaging implementation
+  This module contains definition the OpenAperture Messaging implementation
   """  
 
   @doc """
@@ -50,16 +50,16 @@ defmodule CloudOS.Messaging do
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
 
-    Logger.info("Starting CloudOS.Messaging...")
+    Logger.info("Starting OpenAperture.Messaging...")
 
     children = [
       # Define workers and child supervisors to be supervised
-      supervisor(CloudOS.Messaging.AMQP.ConnectionSupervisor, []),
-      worker(CloudOS.Messaging.ConnectionOptionsResolver, []),
-      worker(CloudOS.Messaging.AMQP.ExchangeResolver, [])
+      supervisor(OpenAperture.Messaging.AMQP.ConnectionSupervisor, []),
+      worker(OpenAperture.Messaging.ConnectionOptionsResolver, []),
+      worker(OpenAperture.Messaging.AMQP.ExchangeResolver, [])
     ]
 
-    opts = [strategy: :one_for_one, name: CloudosBuildServer.Supervisor]
+    opts = [strategy: :one_for_one, name: OpenAperture.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
@@ -75,10 +75,10 @@ defmodule CloudOS.Messaging do
       alias AMQP.Basic
       alias AMQP.Confirm
 
-      alias CloudOS.Messaging.ConnectionOptions
-      alias CloudOS.Messaging.Queue
-      alias CloudOS.Messaging.AMQP.ConnectionPools
-			alias CloudOS.Messaging.AMQP.ConnectionPool
+      alias OpenAperture.Messaging.ConnectionOptions
+      alias OpenAperture.Messaging.Queue
+      alias OpenAperture.Messaging.AMQP.ConnectionPools
+			alias OpenAperture.Messaging.AMQP.ConnectionPool
 
 		  @doc """
 		  Subscribes to a specific queue within the Messaging system.

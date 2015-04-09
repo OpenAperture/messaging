@@ -1,6 +1,6 @@
 require Logger
 
-defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
+defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
   use ExUnit.Case, async: false
 
   alias AMQP.Connection
@@ -9,12 +9,12 @@ defmodule CloudOS.Messaging.AMQP.ConnectionPoolTest do
   alias AMQP.Exchange
   alias AMQP.Queue
 
-  alias CloudOS.Messaging.AMQP.SubscriptionHandler
-  alias CloudOS.Messaging.AMQP.ConnectionPool
-  alias CloudOS.Messaging.AMQP.ConnectionPools
+  alias OpenAperture.Messaging.AMQP.SubscriptionHandler
+  alias OpenAperture.Messaging.AMQP.ConnectionPool
+  alias OpenAperture.Messaging.AMQP.ConnectionPools
 
-  alias CloudOS.Messaging.Queue, as: MessagingQueue
-  alias CloudOS.Messaging.AMQP.Exchange, as: MessagingExchange
+  alias OpenAperture.Messaging.Queue, as: MessagingQueue
+  alias OpenAperture.Messaging.AMQP.Exchange, as: MessagingExchange
 
   ## =============================
   # start_link tests

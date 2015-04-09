@@ -1,9 +1,9 @@
 require Logger
 
-defmodule CloudOS.Messaging.AMQP.ConnectionPoolsTest do
+defmodule OpenAperture.Messaging.AMQP.ConnectionPoolsTest do
   use ExUnit.Case, async: false
 
-  alias CloudOS.Messaging.AMQP.ConnectionPools
+  alias OpenAperture.Messaging.AMQP.ConnectionPools
 
   ## =============================
   # get_pool tests

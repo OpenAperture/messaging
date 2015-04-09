@@ -1,25 +1,25 @@
 #
 # == queue_builder.ex
 #
-# This module contains the logic to build a populated CloudOS.Messaging.Queue
+# This module contains the logic to build a populated OpenAperture.Messaging.Queue
 #
 require Logger
 
-defmodule CloudOS.Messaging.AMQP.QueueBuilder do
+defmodule OpenAperture.Messaging.AMQP.QueueBuilder do
 
   @moduledoc """
-  This module contains the logic to build a populated CloudOS.Messaging.Queue
+  This module contains the logic to build a populated OpenAperture.Messaging.Queue
   """  
 
-	alias CloudOS.Messaging.Queue
-	alias CloudOS.Messaging.AMQP.ExchangeResolver
+	alias OpenAperture.Messaging.Queue
+	alias OpenAperture.Messaging.AMQP.ExchangeResolver
 
   @doc """
-  Method to build a populated CloudOS.Messaging.Queue
+  Method to build a populated OpenAperture.Messaging.Queue
 
   ## Options
 
-  The `api` option defines the CloudOS.ManagerAPI process
+  The `api` option defines the OpenAperture.ManagerApi process
 
   The `queue_name` options value provides the name of the Queue
 
@@ -29,7 +29,7 @@ defmodule CloudOS.Messaging.AMQP.QueueBuilder do
 
   {:ok, pid} | {:error, reason}
   """
-  @spec build(pid, String.t(), String.t()) :: CloudOS.Messaging.Queue.t
+  @spec build(pid, String.t(), String.t()) :: OpenAperture.Messaging.Queue.t
 	def build(api, queue_name, exchange_id) do
 		%Queue{
       name: queue_name, 

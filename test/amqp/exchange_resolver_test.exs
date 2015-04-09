@@ -1,19 +1,19 @@
-defmodule CloudOS.Messaging.AMQP.ExchangeResolverTest do
+defmodule OpenAperture.Messaging.AMQP.ExchangeResolverTest do
   use ExUnit.Case, async: false
   use ExVCR.Mock, adapter: ExVCR.Adapter.Httpc, options: [clear_mock: true]
 
-  alias CloudOS.ManagerAPI
-  alias CloudOS.Messaging.AMQP.ExchangeResolver
+  alias OpenAperture.ManagerApi
+  alias OpenAperture.Messaging.AMQP.ExchangeResolver
 
-  alias CloudOS.Messaging.AMQP.Exchange, as: AMQPExchange
+  alias OpenAperture.Messaging.AMQP.Exchange, as: AMQPExchange
 
   setup_all _context do
-    :meck.new(CloudosAuth.Client, [:passthrough])
-    :meck.expect(CloudosAuth.Client, :get_token, fn _, _, _ -> "abc" end)
+    :meck.new(OpenAperture.Auth.Client, [:passthrough])
+    :meck.expect(OpenAperture.Auth.Client, :get_token, fn _, _, _ -> "abc" end)
 
     on_exit _context, fn ->
       try do
-        :meck.unload CloudosAuth.Client
+        :meck.unload OpenAperture.Auth.Client
       rescue _ -> IO.puts "" end
     end    
     :ok
@@ -24,7 +24,7 @@ defmodule CloudOS.Messaging.AMQP.ExchangeResolverTest do
 
   test "get_exchange - success" do
     use_cassette "get_exchange", custom: true do
-      exchange = ExchangeResolver.get_exchange(ManagerAPI.get_api, "1")
+      exchange = ExchangeResolver.get_exchange(ManagerApi.get_api, "1")
       assert exchange != nil
       assert exchange.name == "test exchange"
     end
@@ -32,8 +32,8 @@ defmodule CloudOS.Messaging.AMQP.ExchangeResolverTest do
 
   test "get_exchange - failure" do
     use_cassette "get_exchange_failure", custom: true do
-      exchange = ExchangeResolver.get_exchange(ManagerAPI.get_api, "1")
-      assert exchange == %CloudOS.Messaging.AMQP.Exchange{failover_name: nil, name: "", options: [:durable], type: :direct}
+      exchange = ExchangeResolver.get_exchange(ManagerApi.get_api, "1")
+      assert exchange == %OpenAperture.Messaging.AMQP.Exchange{failover_name: nil, name: "", options: [:durable], type: :direct}
     end
   end
 
@@ -48,7 +48,7 @@ defmodule CloudOS.Messaging.AMQP.ExchangeResolverTest do
       }
     }
 
-    {:reply, exchange, returned_state} = ExchangeResolver.handle_call({:get, ManagerAPI.get_api, "1"}, %{}, state)
+    {:reply, exchange, returned_state} = ExchangeResolver.handle_call({:get, ManagerApi.get_api, "1"}, %{}, state)
 
     assert returned_state != nil
     assert returned_state[:exchanges]["1"] != nil

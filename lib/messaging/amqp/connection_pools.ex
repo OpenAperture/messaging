@@ -6,11 +6,11 @@
 require Logger
 
 #http://elixir-lang.org/getting-started/mix-otp/genevent.html
-defmodule CloudOS.Messaging.AMQP.ConnectionPools do
+defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
   use GenServer
 
-  alias CloudOS.Messaging.AMQP.ConnectionPool
-  alias CloudOS.Messaging.AMQP.ConnectionOptions, as: AMQPConnectionOptions
+  alias OpenAperture.Messaging.AMQP.ConnectionPool
+  alias OpenAperture.Messaging.AMQP.ConnectionOptions, as: AMQPConnectionOptions
 
   @moduledoc """
   This module contains the GenServer for managing getting ConnectionPools

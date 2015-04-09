@@ -3,7 +3,7 @@
 #
 # This module contains the struct definition for AMQP connection options
 #
-defmodule CloudOS.Messaging.AMQP.ConnectionOptions do
+defmodule OpenAperture.Messaging.AMQP.ConnectionOptions do
 
   @moduledoc """
   This module contains the struct definition for AMQP connection options
@@ -23,9 +23,9 @@ defmodule CloudOS.Messaging.AMQP.ConnectionOptions do
 
   String
   """
-  @spec from_map(Map) :: CloudOS.Messaging.AMQP.ConnectionOptions.t
+  @spec from_map(Map) :: OpenAperture.Messaging.AMQP.ConnectionOptions.t
   def from_map(map) do
-    %CloudOS.Messaging.AMQP.ConnectionOptions{
+    %OpenAperture.Messaging.AMQP.ConnectionOptions{
       id: map["id"],
       username: map["username"],
       password: map["password"],
@@ -71,7 +71,7 @@ defmodule CloudOS.Messaging.AMQP.ConnectionOptions do
     end
 	end
 
-	defimpl CloudOS.Messaging.ConnectionOptions, for: CloudOS.Messaging.AMQP.ConnectionOptions do
+	defimpl OpenAperture.Messaging.ConnectionOptions, for: OpenAperture.Messaging.AMQP.ConnectionOptions do
 
 	  @doc """
 	  Method to determine the type of options (implementation)

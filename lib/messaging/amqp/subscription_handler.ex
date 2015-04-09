@@ -5,7 +5,7 @@
 #
 require Logger
 
-defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
+defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
 	use GenServer
 	use AMQP
 
@@ -205,7 +205,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
 
 	  subscription_handler = self()
 	  {:ok, consumer_tag} = Queue.subscribe(channel, queue.name, fn payload, meta ->
-	    CloudOS.Messaging.AMQP.SubscriptionHandler.process_request(subscription_handler, payload, meta)
+	    OpenAperture.Messaging.AMQP.SubscriptionHandler.process_request(subscription_handler, payload, meta)
 	  end)
 
     state = Map.put(state, :consumer_tag, consumer_tag)
@@ -444,7 +444,7 @@ defmodule CloudOS.Messaging.AMQP.SubscriptionHandler do
   def process_async_request(channel, callback_handler, subscription_handler) do
     receive do
       {:basic_deliver, payload, meta} -> 
-      	subscription_handler_options = CloudOS.Messaging.AMQP.SubscriptionHandler.get_subscription_options(subscription_handler)
+      	subscription_handler_options = OpenAperture.Messaging.AMQP.SubscriptionHandler.get_subscription_options(subscription_handler)
       	execute_callback_handler(subscription_handler_options, subscription_handler, payload, meta)
         process_async_request(channel, callback_handler, subscription_handler)
       {:basic_cancel, %{no_wait: _}} ->
