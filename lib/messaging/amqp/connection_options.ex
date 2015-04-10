@@ -10,7 +10,20 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionOptions do
   """
 
   @type t :: %__MODULE__{}
-	defstruct id: nil, username: nil, password: nil, host: nil, port: nil, virtual_host: nil, failover_id: nil, failover_username: nil, failover_password: nil, failover_host: nil, failover_port: nil, failover_virtual_host: nil
+	defstruct id: nil, 
+    username: nil, 
+    password: nil, 
+    host: nil, 
+    port: nil, 
+    virtual_host: nil, 
+    heartbeat: 60,
+    failover_id: nil, 
+    failover_username: nil, 
+    failover_password: nil, 
+    failover_host: nil, 
+    failover_port: nil, 
+    failover_virtual_host: nil,
+    failover_heartbeat: 60
 
   @doc """
   Method to convert a Map into the ConnectionOptions struct
@@ -32,13 +45,14 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionOptions do
       host: map["host"],
       port: map["port"],
       virtual_host: map["virtual_host"],
+      heartbeat: map["heartbeat"] || 60,
       failover_id: map["failover_id"],
       failover_username: map["failover_username"],
       failover_password: map["failover_password"],
       failover_host: map["failover_host"],
       failover_port: map["failover_port"],
       failover_virtual_host: map["failover_virtual_host"],
-
+      failover_heartbeat: map["failover_heartbeat"] || 60,
     }
   end
 
@@ -107,7 +121,8 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionOptions do
 				password: options.password,
 				host: options.host,
 				port: options.port,
-				virtual_host: options.virtual_host
+				virtual_host: options.virtual_host,
+        heartbeat: options.heartbeat
 			]	  
 		end
 	end

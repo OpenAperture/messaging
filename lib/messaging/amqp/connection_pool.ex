@@ -553,7 +553,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
           resolved_state = Map.put(state, :channels_info, channels_info)
 
           #attempt to restart the channel
-          case restart_channel(state, connection_url, channel_id, 5) do
+          case restart_channel(state, state[:connection_options][:connection_url], channel_id, 5) do
             {resolved_state, {:ok, _new_channel_id}} -> resolved_state
             {resolved_state, {:error, _reason}} -> resolved_state
           end
@@ -876,37 +876,42 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   @spec create_channel_for_connection(term, String.t()) :: {term, term}
   def create_channel_for_connection(state, connection_url) do
     connection = state[:connections_info][:connections][connection_url]
-    case Channel.open(connection) do
-      {:ok, channel} -> 
-        channel_id = "#{UUID.uuid1()}"
-        ref = Process.monitor(channel.pid)
+    if connection == nil do
+      Logger.error("Unable to create a channel for connection #{connection_url}, because the cached connection is invalid!")
+      {nil, state}      
+    else
+      case Channel.open(connection) do
+        {:ok, channel} -> 
+          channel_id = "#{UUID.uuid1()}"
+          ref = Process.monitor(channel.pid)
 
-        channels_info = state[:channels_info]
-        channels_info = Map.put(channels_info, :refs, HashDict.put(state[:channels_info][:refs], ref, channel_id))
+          channels_info = state[:channels_info]
+          channels_info = Map.put(channels_info, :refs, HashDict.put(state[:channels_info][:refs], ref, channel_id))
 
-        channels = Map.put(channels_info[:channels], channel_id, channel)
-        channels_info = Map.put(channels_info, :channels, channels)
+          channels = Map.put(channels_info[:channels], channel_id, channel)
+          channels_info = Map.put(channels_info, :channels, channels)
 
-        GenEvent.sync_notify(state[:events], {:create, channel_id, channel})
+          GenEvent.sync_notify(state[:events], {:create, channel_id, channel})
 
-        resolved_state = Map.put(state, :channels_info, channels_info)
+          resolved_state = Map.put(state, :channels_info, channels_info)
 
-        #store the fact that we've created a channel for that connection
-        channels_for_connection = resolved_state[:connections_info][:channels_for_connections][connection_url]
-        if channels_for_connection == nil do
-          channels_for_connection = []
-        end
-        channels_for_connection = channels_for_connection ++ [channel_id]
+          #store the fact that we've created a channel for that connection
+          channels_for_connection = resolved_state[:connections_info][:channels_for_connections][connection_url]
+          if channels_for_connection == nil do
+            channels_for_connection = []
+          end
+          channels_for_connection = channels_for_connection ++ [channel_id]
 
-        channels = Map.put(resolved_state[:connections_info][:channels_for_connections], connection_url, channels_for_connection)
-        connections_info = Map.put(resolved_state[:connections_info], :channels_for_connections, channels)
-        resolved_state = Map.put(resolved_state, :connections_info, connections_info)
+          channels = Map.put(resolved_state[:connections_info][:channels_for_connections], connection_url, channels_for_connection)
+          connections_info = Map.put(resolved_state[:connections_info], :channels_for_connections, channels)
+          resolved_state = Map.put(resolved_state, :connections_info, connections_info)
 
-        {channel_id, resolved_state}
-      {:error, reason} ->             
-        Logger.error("Unable to create a channel on the AMQP broker: #{inspect reason}")
-        {nil, state}
-    end     
+          {channel_id, resolved_state}
+        {:error, reason} ->             
+          Logger.error("Unable to create a channel on the AMQP broker: #{inspect reason}")
+          {nil, state}
+      end     
+    end      
   end
 
   @doc """

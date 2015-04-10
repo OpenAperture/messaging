@@ -31,7 +31,7 @@ defmodule OpenAperture.Messaging.Mixfile do
   # Type `mix help deps` for more examples and options
   defp deps do
     [
-      {:amqp, "0.1.0"},
+      {:amqp, "0.1.1"},
       {:uuid, "~> 0.1.5" },
 
       {:openaperture_manager_api, git: "https://#{System.get_env("GITHUB_OAUTH_TOKEN")}:x-oauth-basic@github.com/OpenAperture/manager_api.git", 
