@@ -16,7 +16,7 @@ defmodule OpenAperture.Messaging.Mixfile do
   def application do
     [
       mod: { OpenAperture.Messaging, [] },
-      applications: [:logger, :openaperture_manager_api]
+      applications: [:logger, :openaperture_manager_api, :amqp]
     ]
   end
 
