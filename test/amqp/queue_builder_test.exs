@@ -31,4 +31,16 @@ defmodule OpenAperture.Messaging.AMQP.QueueBuilderTest do
   after
     :meck.unload(ExchangeResolver)    
   end
+
+  test "build - success with options" do
+    :meck.new(ExchangeResolver, [:passthrough])
+    :meck.expect(ExchangeResolver, :get, fn _,_ -> %OpenAperture.Messaging.AMQP.Exchange{name: ""} end)
+
+    queue = QueueBuilder.build(ManagerApi.get_api, "test_queue", "1", [durable: false])
+    assert queue != nil
+    assert queue.exchange != nil
+    assert Keyword.get(queue.options, :durable) == false
+  after
+    :meck.unload(ExchangeResolver)
+  end  
 end
