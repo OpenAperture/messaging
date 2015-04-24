@@ -194,7 +194,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   """
   @spec handle_call({:subscribe_sync}, term, Map) :: {:reply, :ok, Map}
   def handle_call({:subscribe_sync}, _from, %{channel: channel, exchange: exchange, queue: queue, callback_handler: _callback_handler} = state) do
-  	Logger.debug("Subscribing synchronously to exchange #{exchange.name}, queue #{queue.name}...")
+  	Logger.debug("[SubscriptionHandler] Subscribing synchronously to exchange #{exchange.name}, queue #{queue.name}...")
 
   	Exchange.declare(channel, exchange.name, exchange.type, exchange.options)
 
@@ -226,7 +226,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   """
   @spec handle_call({:subscribe_async}, term, Map) :: {:reply, :ok, Map}
   def handle_call({:subscribe_async}, _from, %{channel: channel, exchange: exchange, queue: queue, callback_handler: callback_handler} = state) do
-  	Logger.debug("Subscribing asynchronously to exchange #{exchange.name}, queue #{queue.name}...")
+  	Logger.debug("[SubscriptionHandler] Subscribing asynchronously to exchange #{exchange.name}, queue #{queue.name}...")
 
   	Exchange.declare(channel, exchange.name, exchange.type, exchange.options)
 
@@ -238,18 +238,18 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
 	  #link these processes together
 	  subscription_handler = self()
 	  request_handler_pid = spawn_link fn -> 
-	  	Logger.debug("Attempting to establish connection (subscription handler #{inspect subscription_handler}, child #{inspect self()})...")
+	  	Logger.debug("[SubscriptionHandler] Attempting to establish connection (subscription handler #{inspect subscription_handler}, child #{inspect self()})...")
 	  	start_async_handler(channel, callback_handler, subscription_handler) 
 	  end
 
 	  try do
-	  	Logger.debug("Attempting to register connection #{inspect request_handler_pid} with the AMQP client...")
-    	{:ok, consumer_tag} = Basic.consume(channel, queue.name, request_handler_pid)
+	  	Logger.debug("[SubscriptionHandler] Attempting to register connection #{inspect request_handler_pid} with the AMQP client...")
+    	{:ok, consumer_tag} = Basic.consume(channel, queue.name, request_handler_pid, [])
       state = Map.put(state, :consumer_tag, consumer_tag)
-    	Logger.debug("Successfully registered connection #{inspect request_handler_pid} with the AMQP client")
+    	Logger.debug("[SubscriptionHandler] Successfully registered connection #{inspect request_handler_pid} with the AMQP client")
       {:reply, :ok, state}
 	  rescue e ->
-	  	Logger.error("An exception occurred registering connection #{inspect request_handler_pid} with the AMQP client:  #{inspect e}")
+	  	Logger.error("[SubscriptionHandler] An exception occurred registering connection #{inspect request_handler_pid} with the AMQP client:  #{inspect e}")
       {:reply, :ok, state}
 	  end
   end
@@ -292,6 +292,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   """
   @spec handle_call({:acknowledge, String.t()}, term, Map) :: {:reply, :ok, Map}
   def handle_call({:acknowledge, delivery_tag}, _from, state) do
+    Logger.debug("[SubscriptionHandler] Acknowledging message #{delivery_tag} on channel #{inspect state[:channel]}")
     Basic.ack(state[:channel], delivery_tag)
     {:reply, :ok, state}
   end
@@ -314,6 +315,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   """
   @spec handle_call({:reject, String.t(), term}, term, Map) :: {:reply, :ok, Map}
   def handle_call({:reject, delivery_tag, redeliver}, _from, state) do
+    Logger.debug("[SubscriptionHandler] Rejecting message #{delivery_tag} on channel #{inspect state[:channel]}")
     Basic.reject(state[:channel], delivery_tag, requeue: redeliver)
     {:reply, :ok, state}
   end
@@ -344,10 +346,10 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
 							subscription_handler_options[:callback_handler].(deserialized_payload, meta)
 				    rescue exception ->
 				      if subscription_handler_options[:queue].requeue_on_error == true && redelivered == false do
-				        Logger.debug("An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}.  Requeueing message...")
+				        Logger.debug("[SubscriptionHandler] An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}.  Requeueing message...")
 				        Basic.reject(subscription_handler_options[:channel], delivery_tag, requeue: not redelivered)
 				      else
-				        Logger.error("An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}")
+				        Logger.error("[SubscriptionHandler] An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}")
 				        #let AMQP.Queue fail the message
 				        stacktrace = System.stacktrace
 				        reraise exception, stacktrace
@@ -360,10 +362,10 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
 								subscription_handler_options[:callback_handler].(deserialized_payload, meta, %{subscription_handler: subscription_handler, delivery_tag: delivery_tag})
 					    rescue exception ->
 					      if subscription_handler_options[:queue].requeue_on_error == true && redelivered == false do
-					        Logger.debug("An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}.  Requeueing message...")
+					        Logger.debug("[SubscriptionHandler] An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}.  Requeueing message...")
 					        Basic.reject(subscription_handler_options[:channel], delivery_tag, requeue: not redelivered)
 					      else
-					        Logger.error("An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}")
+					        Logger.error("[SubscriptionHandler] An error occurred processing request #{inspect delivery_tag}:  #{inspect exception}")
 					        #let AMQP.Queue fail the message
 					        stacktrace = System.stacktrace
 					        reraise exception, stacktrace
@@ -371,7 +373,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
 					    end
 	  				end
 	  			true -> 
-	  				Logger.error("An error occurred processing request #{inspect delivery_tag}:  callback_handler is an unknown arity!")
+	  				Logger.error("[SubscriptionHandler] An error occurred processing request #{inspect delivery_tag}:  callback_handler is an unknown arity!")
 	  				Basic.reject(subscription_handler_options[:channel], delivery_tag, requeue: true)
 	  		end
   	end
@@ -396,7 +398,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   	try do
     	{true, deserialize(payload)}
     rescue exception ->
-      Logger.debug("An error occurred deserializing the payload for request #{inspect delivery_tag}:  #{inspect exception}\n\n#{inspect payload}")
+      Logger.debug("[SubscriptionHandler] An error occurred deserializing the payload for request #{inspect delivery_tag}:  #{inspect exception}\n\n#{inspect payload}")
       {false, nil}
     end
 	end
@@ -417,13 +419,13 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   """
   @spec start_async_handler(String.t(), term, pid) :: term  
   def start_async_handler(channel, callback_handler, subscription_handler) do
-  	Logger.debug("Waiting to establish connection...")
+  	Logger.debug("[SubscriptionHandler] Waiting to establish connection...")
 		receive do
       {:basic_consume_ok, %{consumer_tag: _consumer_tag}} -> 
-      	Logger.debug("Successfully established connection to the broker!  Waiting for messages...")
+      	Logger.debug("[SubscriptionHandler] Successfully established connection to the broker!  Waiting for messages...")
       	process_async_request(channel, callback_handler, subscription_handler)
       other ->
-      	Logger.error("Failed to established connection to the broker:  #{inspect other}")
+      	Logger.error("[SubscriptionHandler] Failed to established connection to the broker:  #{inspect other}")
     end
   end
 

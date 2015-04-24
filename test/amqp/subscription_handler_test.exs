@@ -214,6 +214,17 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
   end
 
   ## =============================
+  # deserialize_payload tests   
+
+  test "deserialize_payload - success" do
+    assert SubscriptionHandler.deserialize_payload(:erlang.term_to_binary(%{}), "") == {true, %{}}
+  end
+
+  test "deserialize_payload - nil" do
+    assert SubscriptionHandler.deserialize_payload(:erlang.term_to_binary(nil), "") == {true, nil}
+  end   
+
+  ## =============================
   # process_async_request tests
 
   test "process_async_request - success" do
@@ -226,7 +237,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
-    :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
+    :meck.expect(Basic, :consume, fn _, _, _, _ -> {:ok, "consumer_tag"} end)
 
 
     channel = "channel"
@@ -281,7 +292,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
-    :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
+    :meck.expect(Basic, :consume, fn _, _, _, _ -> {:ok, "consumer_tag"} end)
     :meck.expect(Basic, :reject, fn _, _, _ -> :ok end)
 
     channel = "channel"
@@ -319,7 +330,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
     :meck.unload(Basic)
-  end    
+  end 
 
   test "process_async_request - basic_cancel" do
     callback_handler = fn(_payload, _meta, _async_info) ->
@@ -351,7 +362,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     end
     send(test_pid, {:basic_cancel_ok, %{no_wait: true}})
     :timer.sleep(100)
-  end  
+  end 
 
   ## =============================
   # start_async_handler tests
@@ -382,18 +393,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     end
     send(test_pid, {:basic_consume_failed, %{}})
     :timer.sleep(100)
-  end    
-
-  ## =============================
-  # deserialize_payload tests   
-
-  test "deserialize_payload - success" do
-    assert SubscriptionHandler.deserialize_payload(:erlang.term_to_binary(%{}), "") == {true, %{}}
-  end
-
-  test "deserialize_payload - nil" do
-    assert SubscriptionHandler.deserialize_payload(:erlang.term_to_binary(nil), "") == {true, nil}
-  end  
+  end   
 
   ## =============================
   # execute_callback_handler tests
@@ -408,7 +408,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
-    :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
+    :meck.expect(Basic, :consume, fn _, _, _, _ -> {:ok, "consumer_tag"} end)
 
 
     channel = "channel"
@@ -452,7 +452,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
     :meck.unload(Basic)
-  end  
+  end 
 
   test "execute_callback_handler - async success 1" do
     :meck.new(Exchange, [:passthrough])
@@ -464,7 +464,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
-    :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
+    :meck.expect(Basic, :consume, fn _, _, _, _ -> {:ok, "consumer_tag"} end)
 
 
     channel = "channel"
@@ -508,7 +508,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
     :meck.unload(Basic)
-  end 
+  end
 
   test "execute_callback_handler - async failure" do
     :meck.new(Exchange, [:passthrough])
@@ -520,7 +520,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
-    :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
+    :meck.expect(Basic, :consume, fn _, _, _, _ -> {:ok, "consumer_tag"} end)
 
 
     channel = "channel"
@@ -560,7 +560,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
     :meck.unload(Basic)
-  end  
+  end
 
   test "execute_callback_handler - sync failure" do
     :meck.new(Exchange, [:passthrough])
@@ -572,7 +572,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
-    :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
+    :meck.expect(Basic, :consume, fn _, _, _, _ -> {:ok, "consumer_tag"} end)
 
 
     channel = "channel"
@@ -616,7 +616,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.unload(Exchange)
     :meck.unload(Queue)
     :meck.unload(Basic)
-  end   
+  end
 
   test "execute_callback_handler - failure wrong arity" do
     :meck.new(Exchange, [:passthrough])
@@ -628,7 +628,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
 
     :meck.new(Basic, [:passthrough])
-    :meck.expect(Basic, :consume, fn _, _, _ -> :ok end)
+    :meck.expect(Basic, :consume, fn _, _, _, _ -> {:ok, "consumer_tag"} end)
     :meck.expect(Basic, :reject, fn _, _, _ -> :ok end)
     
     channel = "channel"
@@ -708,7 +708,9 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
     :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
-    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :consume, fn _, _, _, _ -> {:ok, "consumer_tag"} end)
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
@@ -736,6 +738,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
   after
     :meck.unload(Exchange)
     :meck.unload(Queue)
+    :meck.unload(Basic)
   end
 
   ## =============================
@@ -748,7 +751,9 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
     :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
-    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :consume, fn _, _, _, _ -> {:ok, "consumer_tag"} end)
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
@@ -776,6 +781,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
   after
     :meck.unload(Exchange)
     :meck.unload(Queue)
+    :meck.unload(Basic)
   end
 
   ## =============================
@@ -828,7 +834,9 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
     :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
-    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
+    
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :consume, fn _, _, _, _ -> {:ok, "consumer_tag"} end)    
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
@@ -860,6 +868,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
   after
     :meck.unload(Exchange)
     :meck.unload(Queue)
+    :meck.unload(Basic)
   end
 
   ## =============================
@@ -872,7 +881,9 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     :meck.new(Queue, [:passthrough])
     :meck.expect(Queue, :declare, fn _, _, _ -> :ok end)
     :meck.expect(Queue, :bind, fn _, _, _, _ -> :ok end)
-    :meck.expect(Queue, :subscribe, fn _, _, _ -> {:ok, "consumer_tag"} end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :consume, fn _, _, _, _ -> {:ok, "consumer_tag"} end)  
 
     channel = "channel"
     {:ok, test_agent} = Agent.start_link(fn -> %{received_message: false} end)
@@ -904,7 +915,8 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
   after
     :meck.unload(Exchange)
     :meck.unload(Queue)
-  end
+    :meck.unload(Basic)
+  end  
 
   ## =============================
   # handle_call({:reject}) tests   
@@ -916,5 +928,5 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     SubscriptionHandler.handle_call({:unsubscribe}, %{}, %{channel: "channel", consumer_tag: "consumer_tag"}) == {:reply, :ok, %{}}
   after
     :meck.unload(Basic)
-  end    
+  end      
 end

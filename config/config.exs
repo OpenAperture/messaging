@@ -16,7 +16,8 @@ use Mix.Config
 #       metadata: [:user_id]
 
 config :logger, :console,
-  level: :info
+  level: :info,
+  format: "$time $metadata[$level][Messaging]$message\n"
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment
