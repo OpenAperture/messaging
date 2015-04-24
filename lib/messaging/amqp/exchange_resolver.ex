@@ -115,7 +115,6 @@ defmodule OpenAperture.Messaging.AMQP.ExchangeResolver do
     case MessagingExchange.get_exchange!(api, exchange_id) do
       nil -> %AMQPExchange{name: "", options: [:durable]}
       exchange ->
-        Logger.debug("get_exchange returned the following:  #{inspect exchange}")
         amqp_exchange = %AMQPExchange{name: exchange["name"], options: [:durable]}  
         if exchange["failover_exchange_id"] != nil do
           case MessagingExchange.get_exchange!(ManagerApi.get_api, exchange["failover_exchange_id"]) do
