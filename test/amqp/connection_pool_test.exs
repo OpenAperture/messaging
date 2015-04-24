@@ -87,6 +87,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :publish, fn _, _, _, _, _ -> :ok end)
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
 
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
@@ -142,6 +143,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn _ -> {:error, "bad news bears"} end)
 
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
+
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
     :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
@@ -185,6 +189,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Channel)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
+    :meck.unload(Basic)
   end
 
   test "handle_call({:publish}) - fail, invalid connection" do
@@ -248,6 +253,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
 
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
+
     :meck.new(Exchange, [:passthrough])
     :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
@@ -301,6 +309,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Queue)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
+    :meck.unload(Basic)
   end
 
   test "handle_call({:subscribe}) - fails; channel fails" do
@@ -311,6 +320,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn _ -> {:error, "bad news bears"} end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
 
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
@@ -355,6 +367,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Channel)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
+    :meck.unload(Basic)
   end
 
   test "handle_call({:subscribe}) - fails; connection fails" do
@@ -465,6 +478,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
 
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
+
     :meck.new(Exchange, [:passthrough])
     :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
@@ -526,6 +542,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Queue)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
+    :meck.unload(Basic)
   end
 
   test "handle_call({:DOWN}) - successfully restart connection, connection fails" do
@@ -593,6 +610,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn _ -> {:error, "bad news bears"} end)
 
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
+
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
     :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
@@ -648,6 +668,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Channel)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
+    :meck.unload(Basic)
   end
 
   test "handle_call({:DOWN}) - successfully restart connection, with channels" do
@@ -658,6 +679,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
 
     :meck.new(Exchange, [:passthrough])
     :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
@@ -731,6 +755,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Queue)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
+    :meck.unload(Basic)
   end  
 
   test "handle_call({:DOWN}) - successfully restart channel" do
@@ -741,6 +766,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn _ -> {:ok, %Channel{pid: chan}} end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)    
 
     :meck.new(Exchange, [:passthrough])
     :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
@@ -801,6 +829,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Queue)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
+    :meck.unload(Basic)
   end
 
   test "handle_call({:DOWN}) - successfully restart connection, with channels and subscribers" do
@@ -811,6 +840,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
 
     :meck.new(Exchange, [:passthrough])
     :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
@@ -897,6 +929,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Queue)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
+    :meck.unload(Basic)
   end    
 
   ## =============================
@@ -918,6 +951,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
 
     :meck.new(Exchange, [:passthrough])
     :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
@@ -981,6 +1017,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Queue)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
+    :meck.unload(Basic)
   end
 
   test "restart_connection - successfully restart connection, connection fails" do
@@ -1048,6 +1085,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn _ -> {:error, "bad news bears"} end)
 
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
+
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
     :meck.expect(GenEvent, :notify, fn _, _ -> :ok end)
@@ -1096,6 +1136,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Channel)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
+    :meck.unload(Basic)
   end
 
   test "restart_connection - successfully restart connection, with channels" do
@@ -1106,6 +1147,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
 
     :meck.new(Exchange, [:passthrough])
     :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
@@ -1176,6 +1220,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Queue)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
+    :meck.unload(Basic)
   end  
 
   ## =============================
@@ -1189,6 +1234,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn _ -> {:ok, %Channel{pid: chan}} end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
 
     :meck.new(Exchange, [:passthrough])
     :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
@@ -1248,6 +1296,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Queue)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
+    :meck.unload(Basic)
   end
 
   ## =============================
@@ -1261,6 +1310,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     {:ok, chan} = Agent.start_link(fn -> %{} end)
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
+
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
 
     :meck.new(Exchange, [:passthrough])
     :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
@@ -1333,6 +1385,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Queue)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
+    :meck.unload(Basic)
   end    
 
   ## =============================
@@ -1349,6 +1402,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :publish, fn _, _, _, _, _ -> :ok end)
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
 
     :meck.new(GenEvent, [:unstick])
     :meck.expect(GenEvent, :sync_notify, fn _, _ -> :ok end)
@@ -1411,6 +1465,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn _ -> {:error, "bad news bears"} end)
 
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
+
     connections_info = %{
       connections: %{},
       channels_for_connections: %{},
@@ -1447,6 +1504,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Channel)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
+    :meck.unload(Basic)
   end
 
   ## =============================
@@ -1931,6 +1989,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.new(Channel, [:passthrough])
     :meck.expect(Channel, :open, fn _ -> {:ok, %Connection{pid: chan}} end)
 
+    :meck.new(Basic, [:passthrough])
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
+
     :meck.new(Exchange, [:passthrough])
     :meck.expect(Exchange, :declare, fn _, _, _, _ -> :ok end)
 
@@ -2002,6 +2063,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     :meck.unload(Queue)
     :meck.unload(GenEvent)
     :meck.unload(Logger)
+    :meck.unload(Basic)
   end
 
   ## =============================
@@ -2036,6 +2098,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
 
     :meck.new(Basic, [:passthrough])
     :meck.expect(Basic, :cancel, fn _, _ -> :ok end)
+    :meck.expect(Basic, :qos, fn _, _ -> :ok end)
 
     connections_info = %{
       connections: %{},

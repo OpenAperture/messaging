@@ -906,6 +906,12 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
           connections_info = Map.put(resolved_state[:connections_info], :channels_for_connections, channels)
           resolved_state = Map.put(resolved_state, :connections_info, connections_info)
 
+          # Set a prefetch count so that a single Queue subscriber doesn't become bogged down.  Currently, this setting
+          # will apply to all consumers, since the channels are controlled by the ConnectionPool
+          prefetch_count = Application.get_env(:openaperture_messaging, :global_prefetch_count, 10)
+          Logger.debug("Channel #{channel_id} has a prefetch_count of #{prefetch_count}")
+          Basic.qos(channel, prefetch_count: prefetch_count)
+
           {channel_id, resolved_state}
         {:error, reason} ->             
           Logger.error("Unable to create a channel on the AMQP broker: #{inspect reason}")
