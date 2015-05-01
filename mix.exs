@@ -36,7 +36,7 @@ defmodule OpenAperture.Messaging.Mixfile do
       {:amqp, "0.1.1"},
       {:uuid, "~> 0.1.5" },
 
-      {:openaperture_manager_api, git: "https://#{System.get_env("GITHUB_OAUTH_TOKEN")}:x-oauth-basic@github.com/OpenAperture/manager_api.git", 
+      {:openaperture_manager_api, git: "https://github.com/OpenAperture/manager_api.git", 
       ref: "f67a4570ec4b46cb2b2bb746924b322eec1e3178"},
 
       #test dependencies
