@@ -26,7 +26,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
   """
   @spec start_link() :: {:ok, pid} | {:error, String.t()}   
   def start_link do
-    GenServer.start_link(__MODULE__, %{exchanges: %{}, broker_connection_options: %{}}, name: __MODULE__)
+    GenServer.start_link(__MODULE__, %{exchanges: %{}, broker_connection_options: %{}, brokers: %{}}, name: __MODULE__)
   end
 
   @doc """
