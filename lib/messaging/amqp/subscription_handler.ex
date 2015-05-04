@@ -35,11 +35,11 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
     		cond do
     			is_function(options[:callback_handler], 2) -> GenServer.call(subscription_handler, {:subscribe_sync})
     			is_function(options[:callback_handler], 3) -> GenServer.call(subscription_handler, {:subscribe_async})
-    			true -> raise "An error occurred creating synchronous SubscriptionHandler:  callback_handler is an unknown arity!"
+    			true -> raise "[SubscriptionHandler] An error occurred creating synchronous SubscriptionHandler:  callback_handler is an unknown arity!"
     		end
 
     		subscription_handler
-    	{:error, reason} -> raise "An error occurred creating synchronous SubscriptionHandler:  #{inspect reason}"
+    	{:error, reason} -> raise "[SubscriptionHandler] An error occurred creating synchronous SubscriptionHandler:  #{inspect reason}"
     end
   end
 

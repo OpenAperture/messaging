@@ -26,7 +26,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
   """
   @spec start_link() :: {:ok, pid} | {:error, String.t()}   
   def start_link do
-    GenServer.start_link(__MODULE__, %{exchanges: %{}, brokers: %{}}, name: __MODULE__)
+    GenServer.start_link(__MODULE__, %{exchanges: %{}, broker_connection_options: %{}}, name: __MODULE__)
   end
 
   @doc """
@@ -136,7 +136,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
       #if the src is restricted, we have to use the dest broker options (don't know if src can connect to dest)
       src_exchange_restrictions != nil && length(src_exchange_restrictions) > 0 -> 
         if dest_exchange_restrictions == nil || length(dest_exchange_restrictions) == 0 do
-          Logger.warn("The source exchange #{src_exchange_id} has restrictions, but no restrictions on destination exchange #{dest_exchange_id} were found.  Attempting to use source restrictions (but this may not work)...")
+          Logger.warn("[ConnectionOptionsResolver] The source exchange #{src_exchange_id} has restrictions, but no restrictions on destination exchange #{dest_exchange_id} were found.  Attempting to use source restrictions (but this may not work)...")
           get_connection_option_for_brokers(resolved_state, api, src_exchange_restrictions)
         else
           get_connection_option_for_brokers(resolved_state, api, dest_exchange_restrictions)
@@ -222,23 +222,23 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
   def get_connection_option_for_broker(state, api, broker_id) do
     {connection_options, resolved_state} = case get_connection_options_from_cache(state, broker_id) do
       nil ->
-        Logger.debug("Retrieving connection options for broker #{broker_id}...")
+        Logger.debug("[ConnectionOptionsResolver] Retrieving connection options for broker #{broker_id}...")
         connection_options = MessagingBroker.broker_connections!(api, broker_id)
         if connection_options == nil do
-          Logger.error("No connection options have been defined for broker #{broker_id}!")
+          Logger.error("[ConnectionOptionsResolver] No connection options have been defined for broker #{broker_id}!")
         else
-          Logger.debug("There are #{length(connection_options)} connection options defined for broker #{broker_id}")
+          Logger.debug("[ConnectionOptionsResolver] There are #{length(connection_options)} connection options defined for broker #{broker_id}")
         end
         {connection_options, cache_connection_options(state, broker_id, connection_options)}
       connection_options -> {connection_options, state}
     end
     connection_option = resolve_connection_option_for_broker(connection_options)
 
-    {failover_connection_option, resolved_state} = case MessagingBroker.get_broker!(api, broker_id) do
-      nil ->
-        Logger.error("Failed to retrieve broker #{broker_id}!")
+    {failover_connection_option, resolved_state} = case get_broker(resolved_state, broker_id, api) do
+      {nil, resolved_state} ->
+        Logger.error("[ConnectionOptionsResolver] Failed to retrieve broker #{broker_id}!")
         {nil, resolved_state}
-      broker ->
+      {broker, resolved_state} ->
         if broker["failover_broker_id"] != nil do
           case get_connection_options_from_cache(resolved_state, broker["failover_broker_id"]) do
             nil ->
@@ -248,7 +248,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
           end
         else
           {nil, resolved_state}
-        end
+        end        
     end
 
     cond do 
@@ -281,10 +281,12 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
   """
   @spec get_connection_options_from_cache(Map, String.t()) :: List
   def get_connection_options_from_cache(state, broker_id) do
-    broker_id_cache = state[:brokers][broker_id]
+    broker_id_cache = state[:broker_connection_options][broker_id]
     if cache_stale?(broker_id_cache) do
+      Logger.debug("[ConnectionOptionsResolver] Connection options for broker #{broker_id} are not cached")
       nil
     else
+      Logger.debug("[ConnectionOptionsResolver] Connection options for broker #{broker_id} are cached")
       broker_id_cache[:connection_options]
     end    
   end
@@ -311,8 +313,47 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
       connection_options: connection_options
     }
 
-    broker_cache = Map.put(state[:brokers], broker_id, broker_id_cache)
-    Map.put(state, :brokers, broker_cache)
+    broker_cache = Map.put(state[:broker_connection_options], broker_id, broker_id_cache)
+    Map.put(state, :broker_connection_options, broker_cache)
+  end
+
+  @doc """
+  Method to retrieve a broker from cache or from the Manager
+
+  ## Options
+
+  The `state` option represents the current server state
+
+  The `broker_id` option represents an MessagingBroker identifier
+
+  The `api` option represents a OpenAperture.ManagerApi
+
+  ## Return Values
+
+  Map of the MessagingBroker
+  """
+  @spec get_broker(Map, String.t, pid) :: {Map, Map}
+  def get_broker(state, broker_id, api) do
+    broker_cache = state[:brokers][broker_id]
+    if cache_stale?(broker_cache) do
+      Logger.debug("[ConnectionOptionsResolver] Broker #{broker_id} is not cached, retrieving...")
+      case MessagingBroker.get_broker!(api, broker_id) do
+        nil ->
+          Logger.error("[ConnectionOptionsResolver] Failed to retrieve broker #{broker_id}!")
+          {nil, state}
+        broker ->
+          broker_cache = %{
+            retrieval_time: :calendar.universal_time,
+            broker: broker
+          }
+
+          broker_cache = Map.put(state[:brokers], broker_id, broker_cache)
+          state = Map.put(state, :brokers, broker_cache)
+          {broker, state}    
+      end
+    else
+      {broker_cache[:broker], state}
+    end  
   end
 
   @doc """

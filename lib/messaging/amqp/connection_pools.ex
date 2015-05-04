@@ -107,10 +107,10 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
       nil ->
         case start_connection_pool(connection_options, state) do
           {:ok, pool, resolved_state} -> 
-            Logger.debug("Successfully started ConnectionPool for #{connection_options[:host]}")
+            Logger.debug("[ConnectionPools] Successfully started ConnectionPool for #{connection_options[:host]}")
             {:reply, pool, resolved_state}
           {:error, reason, resolved_state} ->
-            Logger.error("Failed to start ConnectionPool for #{connection_options[:host]}: #{inspect reason}")
+            Logger.error("[ConnectionPools] Failed to start ConnectionPool for #{connection_options[:host]}: #{inspect reason}")
             {:reply, nil, resolved_state}
         end
       pool -> {:reply, pool, state}
@@ -146,10 +146,10 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
     #remove reference to ConnectionPool
     resolved_state = case resolved_state[:pools][connection_url] do
       nil -> 
-        Logger.debug("ConnectionPool #{connection_options[:host]} was not registered")
+        Logger.debug("[ConnectionPools] ConnectionPool #{connection_options[:host]} was not registered")
         resolved_state
       _ -> 
-        Logger.debug("Successfully removed ConnectionPool #{connection_options[:host]}")
+        Logger.debug("[ConnectionPools] Successfully removed ConnectionPool #{connection_options[:host]}")
         Map.put(resolved_state, :pools, Map.delete(resolved_state[:pools], connection_url))
     end 
     {:reply, :ok, resolved_state}       

@@ -4,6 +4,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
 
   alias OpenAperture.ManagerApi
   alias OpenAperture.Messaging.ConnectionOptionsResolver
+  alias OpenAperture.ManagerApi.MessagingBroker
 
   setup_all _context do
     :meck.new(OpenAperture.Auth.Client, [:passthrough])
@@ -22,8 +23,9 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
 
   test "get_restrictions_for_exchange - success" do
     state = %{
+      brokers: %{},
       exchanges: %{},
-      brokers: %{}
+      broker_connection_options: %{}
     }
 
     use_cassette "exchange_brokers", custom: true do
@@ -52,8 +54,9 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
 
   test "get_restrictions_for_exchange - failure" do
     state = %{
+      brokers: %{},
       exchanges: %{},
-      brokers: %{}
+      broker_connection_options: %{}
     }
 
     use_cassette "exchange_brokers_failure", custom: true do
@@ -71,13 +74,14 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
 
   test "get_restrictions_for_exchange - success cached" do
     state = %{
+      brokers: %{},
       exchanges: %{
         "1" => %{
           retrieval_time: :calendar.universal_time,
           broker_restrictions: []
         }
       },
-      brokers: %{}
+      broker_connection_options: %{}
     }
 
     {brokers, returned_state} = ConnectionOptionsResolver.get_restrictions_for_exchange(state, ManagerApi.get_api, "1")
@@ -105,24 +109,24 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
     assert returned_option == List.first(brokers)
   end
   
-
   # =========================================
   # get_connection_option_for_broker tests
 
   test "get_connection_option_for_broker - success" do
     state = %{
+      brokers: %{},
       exchanges: %{},
-      brokers: %{}
+      broker_connection_options: %{}
     }
 
     use_cassette "get_broker_connections", custom: true do
       {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_broker(state, ManagerApi.get_api, "1")
 
       assert returned_state != nil
-      assert returned_state[:brokers] != nil
-      assert returned_state[:brokers]["1"] != nil
-      assert returned_state[:brokers]["1"][:connection_options] != nil
-      assert returned_state[:brokers]["1"][:connection_options] != nil
+      assert returned_state[:broker_connection_options] != nil
+      assert returned_state[:broker_connection_options]["1"] != nil
+      assert returned_state[:broker_connection_options]["1"][:connection_options] != nil
+      assert returned_state[:broker_connection_options]["1"][:connection_options] != nil
 
       is_successful = cond do
         option["id"] == 1 && option["username"] == "test" -> true
@@ -135,18 +139,19 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
 
   test "get_connection_option_for_broker - success with failover" do
     state = %{
+      brokers: %{},
       exchanges: %{},
-      brokers: %{}
+      broker_connection_options: %{}
     }
 
     use_cassette "get_broker_connections-with-failover", custom: true do
       {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_broker(state, ManagerApi.get_api, "1")
 
       assert returned_state != nil
-      assert returned_state[:brokers] != nil
-      assert returned_state[:brokers]["1"] != nil
-      assert returned_state[:brokers]["1"][:connection_options] != nil
-      assert returned_state[:brokers]["1"][:connection_options] != nil
+      assert returned_state[:broker_connection_options] != nil
+      assert returned_state[:broker_connection_options]["1"] != nil
+      assert returned_state[:broker_connection_options]["1"][:connection_options] != nil
+      assert returned_state[:broker_connection_options]["1"][:connection_options] != nil
 
       is_successful = cond do
         option["id"] == 1 ->
@@ -165,17 +170,18 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
 
   test "get_connection_option_for_broker - failure" do
     state = %{
+      brokers: %{},
       exchanges: %{},
-      brokers: %{}
+      broker_connection_options: %{}
     }
 
     use_cassette "get_broker_connections_failure", custom: true do
       {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_broker(state, ManagerApi.get_api, "1")
 
       assert returned_state != nil
-      assert returned_state[:brokers] != nil
-      assert returned_state[:brokers]["1"] != nil
-      assert returned_state[:brokers]["1"][:connection_options] == nil
+      assert returned_state[:broker_connection_options] != nil
+      assert returned_state[:broker_connection_options]["1"] != nil
+      assert returned_state[:broker_connection_options]["1"][:connection_options] == nil
 
       assert option == nil
     end
@@ -183,7 +189,8 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
 
   test "get_connection_option_for_broker - success cached" do
     state = %{
-      brokers: %{
+      brokers: %{},
+      broker_connection_options: %{
         "1" => %{
           retrieval_time: :calendar.universal_time,
           connection_options: [%{}]
@@ -195,30 +202,31 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
     use_cassette "get_broker", custom: true do
       {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_broker(state, ManagerApi.get_api, "1")
       assert returned_state != nil
-      assert returned_state[:brokers] != nil
-      assert returned_state[:brokers]["1"] != nil
-      assert returned_state[:brokers]["1"][:connection_options] != nil
+      assert returned_state[:broker_connection_options] != nil
+      assert returned_state[:broker_connection_options]["1"] != nil
+      assert returned_state[:broker_connection_options]["1"][:connection_options] != nil
       assert option == %{}
     end
-  end
+  end    
 
   # =========================================
   # get_connection_option_for_brokers tests
 
   test "get_connection_option_for_brokers - success" do
     state = %{
+      brokers: %{},
       exchanges: %{},
-      brokers: %{}
+      broker_connection_options: %{}
     }
 
     use_cassette "get_broker_connections", custom: true do
       {option, returned_state} = ConnectionOptionsResolver.get_connection_option_for_brokers(state, ManagerApi.get_api, [%{"id"=> "1"}])
 
       assert returned_state != nil
-      assert returned_state[:brokers] != nil
-      assert returned_state[:brokers]["1"] != nil
-      assert returned_state[:brokers]["1"][:connection_options] != nil
-      assert returned_state[:brokers]["1"][:connection_options] != nil
+      assert returned_state[:broker_connection_options] != nil
+      assert returned_state[:broker_connection_options]["1"] != nil
+      assert returned_state[:broker_connection_options]["1"][:connection_options] != nil
+      assert returned_state[:broker_connection_options]["1"][:connection_options] != nil
 
       is_successful = cond do
         option["id"] == 1 && option["username"] == "test" -> true
@@ -227,7 +235,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
       end
       assert is_successful == true      
     end
-  end  
+  end    
 
   #=========================
   # cache_stale? tests
@@ -252,7 +260,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
       retrieval_time: :calendar.universal_time
     }
     assert ConnectionOptionsResolver.cache_stale?(state) == false
-  end
+  end  
 
   #=========================
   # handle_call({:resolve}) tests  
@@ -260,8 +268,9 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
   test "handle_call({:resolve}) - no restrictions" do
     use_cassette "resolve-no-restrictions", custom: true do
       state = %{
+        brokers: %{},
         exchanges: %{},
-        brokers: %{}
+        broker_connection_options: %{}
       }
 
       {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerApi.get_api, "1", "1", "2"}, %{}, state)
@@ -275,8 +284,9 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
   test "handle_call({:resolve}) - src restrictions" do
     use_cassette "resolve-src-restrictions", custom: true do
       state = %{
+        brokers: %{},
         exchanges: %{},
-        brokers: %{}
+        broker_connection_options: %{}
       }
 
       {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerApi.get_api, "1", "1", "2"}, %{}, state)
@@ -290,8 +300,9 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
   test "handle_call({:resolve}) - src and dst restrictions" do
     use_cassette "resolve-srcdst-restrictions", custom: true do
       state = %{
+        brokers: %{},
         exchanges: %{},
-        brokers: %{}
+        broker_connection_options: %{}
       }
 
       {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerApi.get_api, "1", "1", "2"}, %{}, state)
@@ -305,8 +316,9 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
   test "handle_call({:resolve}) - dst restrictions" do
     use_cassette "resolve-dst-restrictions", custom: true do
       state = %{
+        brokers: %{},
         exchanges: %{},
-        brokers: %{}
+        broker_connection_options: %{}
       }
 
       {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:resolve, ManagerApi.get_api, "1", "1", "2"}, %{}, state)
@@ -315,25 +327,26 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
 
       assert returned_state != nil
     end
-  end  
+  end    
 
   # =========================================
   # handle_call({:get_for_broker}) tests
 
   test "handle_call({:get_for_broker}) - success" do
     state = %{
+      brokers: %{},
       exchanges: %{},
-      brokers: %{}
+      broker_connection_options: %{}
     }
 
     use_cassette "get_broker_connections", custom: true do
       {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:get_for_broker, ManagerApi.get_api, "1"}, %{}, state)
 
       assert returned_state != nil
-      assert returned_state[:brokers] != nil
-      assert returned_state[:brokers]["1"] != nil
-      assert returned_state[:brokers]["1"][:connection_options] != nil
-      assert returned_state[:brokers]["1"][:connection_options] != nil
+      assert returned_state[:broker_connection_options] != nil
+      assert returned_state[:broker_connection_options]["1"] != nil
+      assert returned_state[:broker_connection_options]["1"][:connection_options] != nil
+      assert returned_state[:broker_connection_options]["1"][:connection_options] != nil
 
       is_successful = cond do
         connection_option.id == 1 && connection_option.username == "test" -> true
@@ -342,29 +355,34 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
       end
       assert is_successful == true      
     end
-  end
+  end  
 
   test "handle_call({:get_for_broker}) - failure" do
     state = %{
+      brokers: %{},
       exchanges: %{},
-      brokers: %{}
+      broker_connection_options: %{}
     }
 
     use_cassette "get_broker_connections_failure", custom: true do
       {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:get_for_broker, ManagerApi.get_api, "1"}, %{}, state)
 
       assert returned_state != nil
-      assert returned_state[:brokers] != nil
-      assert returned_state[:brokers]["1"] != nil
-      assert returned_state[:brokers]["1"][:connection_options] == nil
+      assert returned_state[:broker_connection_options] != nil
+      assert returned_state[:broker_connection_options]["1"] != nil
+      assert returned_state[:broker_connection_options]["1"][:connection_options] == nil
 
       assert connection_option == nil
     end
-  end
+  end  
 
   test "handle_call({:get_for_broker}) - success cached" do
+    :meck.new(MessagingBroker, [:passthrough])
+    :meck.expect(MessagingBroker, :get_broker!, fn _,_ -> %{"failover_broker_id" => nil} end)
+
     state = %{
-      brokers: %{
+      brokers: %{},
+      broker_connection_options: %{
         "1" => %{
           retrieval_time: :calendar.universal_time,
           connection_options: [%{}]
@@ -376,10 +394,12 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolverTest do
     {:reply, connection_option, returned_state} = ConnectionOptionsResolver.handle_call({:get_for_broker, ManagerApi.get_api, "1"}, %{}, state)
 
     assert returned_state != nil
-    assert returned_state[:brokers] != nil
-    assert returned_state[:brokers]["1"] != nil
-    assert returned_state[:brokers]["1"][:connection_options] != nil
+    assert returned_state[:broker_connection_options] != nil
+    assert returned_state[:broker_connection_options]["1"] != nil
+    assert returned_state[:broker_connection_options]["1"][:connection_options] != nil
     assert connection_option == %OpenAperture.Messaging.AMQP.ConnectionOptions{}
-  end    
+  after
+    :meck.unload(MessagingBroker)
+  end      
 end
 
