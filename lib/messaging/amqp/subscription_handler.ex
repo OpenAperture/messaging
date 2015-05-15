@@ -196,12 +196,15 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   def handle_call({:subscribe_sync}, _from, %{channel: channel, exchange: exchange, queue: queue, callback_handler: _callback_handler} = state) do
   	Logger.debug("[SubscriptionHandler] Subscribing synchronously to exchange #{exchange.name}, queue #{queue.name}...")
 
-  	Exchange.declare(channel, exchange.name, exchange.type, exchange.options)
+    if exchange.auto_declare do
+  	  Exchange.declare(channel, exchange.name, exchange.type, exchange.options)
+    end
 
 	  # Messages that cannot be delivered to any consumer in the main queue will be routed to the error queue
-	  Queue.declare(channel, queue.name, queue.options)
-
-	  Queue.bind(channel, queue.name, exchange.name, queue.binding_options)
+    if queue.auto_declare do
+  	  Queue.declare(channel, queue.name, queue.options)
+  	  Queue.bind(channel, queue.name, exchange.name, queue.binding_options)
+    end
 
 	  subscription_handler = self()
 	  {:ok, consumer_tag} = Queue.subscribe(channel, queue.name, fn payload, meta ->
@@ -228,12 +231,15 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   def handle_call({:subscribe_async}, _from, %{channel: channel, exchange: exchange, queue: queue, callback_handler: callback_handler} = state) do
   	Logger.debug("[SubscriptionHandler] Subscribing asynchronously to exchange #{exchange.name}, queue #{queue.name}...")
 
-  	Exchange.declare(channel, exchange.name, exchange.type, exchange.options)
+    if exchange.auto_declare do
+  	  Exchange.declare(channel, exchange.name, exchange.type, exchange.options)
+    end
 
 	  # Messages that cannot be delivered to any consumer in the main queue will be routed to the error queue
-	  Queue.declare(channel, queue.name, queue.options)
-
-	  Queue.bind(channel, queue.name, exchange.name, queue.binding_options)
+    if queue.auto_declare do
+  	  Queue.declare(channel, queue.name, queue.options)
+  	  Queue.bind(channel, queue.name, exchange.name, queue.binding_options)
+    end
 
 	  #link these processes together
 	  subscription_handler = self()

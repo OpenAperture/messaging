@@ -113,13 +113,17 @@ defmodule OpenAperture.Messaging.AMQP.ExchangeResolver do
   @spec get_exchange(pid, String.t()) :: AMQPExchange.t
   def get_exchange(api, exchange_id) do
     case MessagingExchange.get_exchange!(api, exchange_id) do
-      nil -> %AMQPExchange{name: "", options: [:durable]}
+      nil -> %AMQPExchange{}
       exchange ->
-        amqp_exchange = %AMQPExchange{name: exchange["name"], options: [:durable]}  
+        amqp_exchange = AMQPExchange.from_manager_exchange(exchange)
         if exchange["failover_exchange_id"] != nil do
           case MessagingExchange.get_exchange!(ManagerApi.get_api, exchange["failover_exchange_id"]) do
             nil -> amqp_exchange
-            failover_exchange -> %AMQPExchange{name: exchange["name"], failover_name: failover_exchange["name"], options: [:durable]}
+            failover_exchange -> %{amqp_exchange | 
+              failover_name: failover_exchange["name"],
+              failover_routing_key: failover_exchange["routing_key"],
+              failover_root_exchange_name: failover_exchange["root_exchange_name"],
+            }
           end
         else
           amqp_exchange

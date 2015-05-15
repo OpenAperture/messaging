@@ -245,7 +245,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
             end
           {channel_id, resolved_state} ->
             channel = resolved_state[:channels_info][:channels][channel_id]
-            Basic.publish(channel, exchange.name, queue.name, serilalize(payload), [:persistent])
+            Basic.publish(channel, exchange.name, "#{exchange.routing_key}.#{queue.name}", serilalize(payload), [:persistent])
             {:reply, :ok, resolved_state}
         end
       end
