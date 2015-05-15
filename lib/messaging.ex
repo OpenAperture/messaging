@@ -107,7 +107,7 @@ defmodule OpenAperture.Messaging do
 						if connection_pool == nil do
 							{:error, "[Messaging] Unable to subscribe - failed to retrieve a connection pool for #{connection_options.host}!"}
 						else
-							Logger.debug("[Messaging] Subscribing to connection pool  #{connection_options.host}...")
+							Logger.debug("[Messaging] Subscribing to connection pool #{connection_options.host}...")
 							ConnectionPool.subscribe(connection_pool, queue.exchange, queue, callback_handler)						
 						end
 					_ -> {:error, "[Messaging] Connection type #{inspect ConnectionOptions.type(connection_options)} is unknown!"}
@@ -170,7 +170,7 @@ defmodule OpenAperture.Messaging do
 						if connection_pool == nil do
 							{:error, "[Messaging] Unable to publish - failed to retrieve a connection pool for #{connection_options.host}!"}
 						else						
-							Logger.debug("[Messaging] Publishing to connection pool  #{connection_options.host}...")
+							Logger.debug("[Messaging] Publishing to connection pool #{connection_options.host}...")
 							ConnectionPool.publish(connection_pool, queue.exchange, queue, payload)						
 						end
 					_ -> {:error, "[Messaging] Connection type #{inspect ConnectionOptions.type(connection_options)} is unknown!"}

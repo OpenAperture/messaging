@@ -194,14 +194,16 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   """
   @spec handle_call({:subscribe_sync}, term, Map) :: {:reply, :ok, Map}
   def handle_call({:subscribe_sync}, _from, %{channel: channel, exchange: exchange, queue: queue, callback_handler: _callback_handler} = state) do
-  	Logger.debug("[SubscriptionHandler] Subscribing synchronously to exchange #{exchange.name}, queue #{queue.name}...")
+  	Logger.debug("[SubscriptionHandler] Subscribing synchronously to queue #{queue.name}...")
 
     if exchange.auto_declare do
+      Logger.debug("[SubscriptionHandler] Declaring exchange #{exchange.name}")
   	  Exchange.declare(channel, exchange.name, exchange.type, exchange.options)
     end
 
 	  # Messages that cannot be delivered to any consumer in the main queue will be routed to the error queue
     if queue.auto_declare do
+      Logger.debug("[SubscriptionHandler] Declaring queue #{queue.name}")
   	  Queue.declare(channel, queue.name, queue.options)
   	  Queue.bind(channel, queue.name, exchange.name, queue.binding_options)
     end
@@ -229,14 +231,16 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   """
   @spec handle_call({:subscribe_async}, term, Map) :: {:reply, :ok, Map}
   def handle_call({:subscribe_async}, _from, %{channel: channel, exchange: exchange, queue: queue, callback_handler: callback_handler} = state) do
-  	Logger.debug("[SubscriptionHandler] Subscribing asynchronously to exchange #{exchange.name}, queue #{queue.name}...")
+  	Logger.debug("[SubscriptionHandler] Subscribing asynchronously queue #{queue.name}...")
 
     if exchange.auto_declare do
+      Logger.debug("[SubscriptionHandler] Declaring exchange #{exchange.name}")
   	  Exchange.declare(channel, exchange.name, exchange.type, exchange.options)
     end
 
 	  # Messages that cannot be delivered to any consumer in the main queue will be routed to the error queue
     if queue.auto_declare do
+      Logger.debug("[SubscriptionHandler] Declaring queue #{queue.name}")
   	  Queue.declare(channel, queue.name, queue.options)
   	  Queue.bind(channel, queue.name, exchange.name, queue.binding_options)
     end
