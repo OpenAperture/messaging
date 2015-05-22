@@ -32,7 +32,7 @@ defmodule OpenAperture.Messaging.Mixfile do
   defp deps do
     [
       {:ex_doc, github: "elixir-lang/ex_doc", only: [:test]},
-      {:markdown, github: "devinus/markdown", only: [:test]},      
+      {:earmark, github: "pragdave/earmark", tag: "v0.1.8", only: [:test]},     
       {:amqp, "0.1.1"},
       {:uuid, "~> 0.1.5" },
 
