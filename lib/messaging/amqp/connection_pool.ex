@@ -760,11 +760,29 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   """  
   @spec restart_channel(term, String.t(), String.t(), term) :: {term, {:ok, String.t()}} | {term, {:error, String.t()}}
   def restart_channel(state, connection_url, old_channel_id, retry_cnt) do
+    #have to clear out channels data first, because channel_id is process id which won't change
+    old_queues_for_channel = state[:channels_info][:queues_for_channel][old_channel_id]
+
+    #clear out expired channel info (key is ref, not channel_id)
+    remaining_channel_refs = Enum.reduce HashDict.keys(state[:channels_info][:refs]), HashDict.new, fn (key, remaining_channel_refs) ->
+      channel_id_for_key = HashDict.get(state[:channels_info][:refs], key)
+      if channel_id_for_key == old_channel_id do
+        remaining_channel_refs
+      else
+        HashDict.put(remaining_channel_refs, key, channel_id_for_key)
+      end
+    end
+
+    channels_info = Map.put(state[:channels_info], :refs, remaining_channel_refs)
+    channels_info = Map.put(channels_info, :channels, Map.delete(channels_info[:channels], old_channel_id))
+    channels_info = Map.put(channels_info, :queues_for_channel, Map.delete(channels_info[:queues_for_channel], old_channel_id))   
+    resolved_state = Map.put(state, :channels_info, channels_info)
+
     #start a new channel
-    {resolved_state, result} = case create_channel_for_connection(state, connection_url) do
+    {resolved_state, result} = case create_channel_for_connection(resolved_state, connection_url) do
       {nil, resolved_state} -> 
         if retry_cnt <= 0 do
-          Logger.error("[ConnectionPool] Failed to restart the channel #{old_channel_id} on connection #{state[:connection_options][:host]}, retrying...")
+          Logger.error("[ConnectionPool] Failed to restart the channel #{old_channel_id} on connection #{resolved_state[:connection_options][:host]}, retrying...")
           :timer.sleep(1000)  
           restart_channel(resolved_state, connection_url, old_channel_id, retry_cnt-1)        
         else
@@ -772,9 +790,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
         end
       {channel_id, resolved_state} ->
         #re-register subscribers
-        queues_for_channel = resolved_state[:channels_info][:queues_for_channel][old_channel_id]
-        resolved_state = if queues_for_channel != nil do
-          Enum.reduce queues_for_channel, resolved_state, fn (subscription_handler, resolved_state) ->
+        
+        resolved_state = if old_queues_for_channel != nil do
+          Enum.reduce old_queues_for_channel, resolved_state, fn (subscription_handler, resolved_state) ->
             queue_info = SubscriptionHandler.get_subscription_options(subscription_handler)
             {updated_state, _subscription_handler} = subscribe_to_queue(resolved_state, channel_id, queue_info[:exchange], queue_info[:queue], queue_info[:callback_handler])
             updated_state
@@ -784,22 +802,6 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
         end
         {resolved_state, {:ok, channel_id}}
     end
-
-    #clear out expired channel info (key is ref, not channel_id)
-    remaining_channel_refs = Enum.reduce HashDict.keys(resolved_state[:channels_info][:refs]), HashDict.new, fn (key, remaining_channel_refs) ->
-      channel_id_for_key = HashDict.get(resolved_state[:channels_info][:refs], key)
-      if channel_id_for_key == old_channel_id do
-        remaining_channel_refs
-      else
-        HashDict.put(remaining_channel_refs, key, channel_id_for_key)
-      end
-    end
-
-    channels_info = Map.put(resolved_state[:channels_info], :refs, remaining_channel_refs)
-
-    queues_for_channel = Map.delete(channels_info[:queues_for_channel], old_channel_id)
-    channels_info = Map.put(channels_info, :queues_for_channel, queues_for_channel)
-    resolved_state = Map.put(resolved_state, :channels_info, channels_info)
 
     {resolved_state, result}
   end
@@ -857,7 +859,13 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
       {nil, resolved_state} ->
         Logger.error("[ConnectionPool] Unable to create a channel on the AMQP broker because an invalid connection was returned!")
         {nil, resolved_state}
-      {connection_url, resolved_state} -> create_channel_for_connection(resolved_state, connection_url)    
+      {connection_url, resolved_state} -> 
+        channel_id = "#{inspect self()}"
+        if state[:channels_info][:channels][channel_id] == nil do
+          create_channel_for_connection(resolved_state, connection_url)    
+        else
+          {channel_id, resolved_state}
+        end
     end
   end
 
@@ -883,11 +891,12 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
     else
       case Channel.open(connection) do
         {:ok, channel} -> 
-          channel_id = "#{UUID.uuid1()}"
+          channel_id = "#{inspect self()}"
           ref = Process.monitor(channel.pid)
 
           channels_info = state[:channels_info]
           channels_info = Map.put(channels_info, :refs, HashDict.put(state[:channels_info][:refs], ref, channel_id))
+          channels_info = Map.put(channels_info, :channels, Map.put(channels_info[:channels], channel_id, channel))
 
           channels = Map.put(channels_info[:channels], channel_id, channel)
           channels_info = Map.put(channels_info, :channels, channels)

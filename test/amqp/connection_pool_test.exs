@@ -747,7 +747,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     assert result_state[:connections_info][:channels_for_connections][connection_url] != nil
     assert length(result_state[:connections_info][:channels_for_connections][connection_url]) == 1
     new_channel_id_for_connection = List.first(result_state[:connections_info][:channels_for_connections][connection_url])
-    assert new_channel_id_for_connection != original_channel_id_for_connection
+    assert new_channel_id_for_connection == original_channel_id_for_connection
   after
     :meck.unload(Connection)
     :meck.unload(Channel)
@@ -910,7 +910,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     assert result_state[:connections_info][:channels_for_connections][connection_url] != nil
     assert length(result_state[:connections_info][:channels_for_connections][connection_url]) == 1
     new_channel_id_for_connection = List.first(result_state[:connections_info][:channels_for_connections][connection_url])
-    assert new_channel_id_for_connection != original_channel_id_for_connection
+    assert new_channel_id_for_connection == original_channel_id_for_connection
 
     queues_for_channel = result_state[:channels_info][:queues_for_channel][new_channel_id_for_connection]
     assert queues_for_channel != nil
@@ -1212,7 +1212,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     assert result_state[:connections_info][:channels_for_connections][connection_url] != nil
     assert length(result_state[:connections_info][:channels_for_connections][connection_url]) == 1
     new_channel_id_for_connection = List.first(result_state[:connections_info][:channels_for_connections][connection_url])
-    assert new_channel_id_for_connection != original_channel_id_for_connection
+    assert new_channel_id_for_connection == original_channel_id_for_connection
   after
     :meck.unload(Connection)
     :meck.unload(Channel)
@@ -1442,6 +1442,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPoolTest do
     assert channel_id != nil
     assert result_state != nil
     assert length(HashDict.keys(result_state[:channels_info][:refs])) == 1
+    assert Map.size(result_state[:channels_info][:channels]) == 1
   after
     :meck.unload(Connection)
     :meck.unload(Channel)
