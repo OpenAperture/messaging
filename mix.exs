@@ -31,8 +31,8 @@ defmodule OpenAperture.Messaging.Mixfile do
   # Type `mix help deps` for more examples and options
   defp deps do
     [
-      {:ex_doc, github: "elixir-lang/ex_doc", only: [:test]},
-      {:earmark, github: "pragdave/earmark", tag: "v0.1.8", only: [:test]},     
+      {:ex_doc, "0.7.3", only: :test},
+      {:earmark, "0.1.17", only: :test},
       {:amqp, "0.1.1"},
       {:uuid, "~> 0.1.5" },
 
