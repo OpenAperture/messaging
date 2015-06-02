@@ -11,6 +11,7 @@ defmodule OpenAperture.Messaging.RpcRequest do
 
 	defstruct queue_name: "",
 		id: nil,
+    status: nil,
 		request_body: nil,
 		response_body: nil
 
@@ -47,6 +48,7 @@ defmodule OpenAperture.Messaging.RpcRequest do
   def from_payload(payload) do
 		%RpcRequest{
 			id: payload[:id],
+      status: payload[:status],
   		request_body: payload[:request_body],
   		response_body: payload[:response_body]
   	}

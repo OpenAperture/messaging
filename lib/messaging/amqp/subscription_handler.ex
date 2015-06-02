@@ -130,6 +130,34 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   end
 
   @doc """
+  Method to reject an RPC request via the handler server
+
+  ## Options
+
+  The `subscription_handler` option defines the PID of the SubscriptionHandler
+
+  The `delivery_tag` option defines the delivery tag of the messsage
+
+  The `api` option defines the ManagerApi that should be used for updates
+
+  The `rpc_request` option represents the RpcRequest to be updated
+
+  The `redeliver` option defines a boolean that can requeue a message
+
+  ## Return Value
+  :ok
+  """
+  @spec reject_rpc(pid, String.t(), pid, RpcRequest.t, term) :: :ok
+  def reject_rpc(subscription_handler, delivery_tag, api, rpc_request, redeliver \\ false) do
+    case RpcRequest.save(api, rpc_request) do
+      {:ok, _} -> Logger.debug("Successfully updated RPC request (rejecting tag #{delivery_tag})")
+      {:error, _} -> Logger.error("Failed to update RPC request (rejecting tag #{delivery_tag})!")
+    end
+
+    GenServer.call(subscription_handler, {:reject, delivery_tag, redeliver})
+  end  
+
+  @doc """
   Method to unsubscribe from a queue (tied to the SubscriptionHandler)
 
   ## Options

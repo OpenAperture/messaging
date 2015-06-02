@@ -959,4 +959,33 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
   after
     :meck.unload(Basic)
   end      
+
+  ## =============================
+  # reject_rpc tests   
+
+  test "reject_rpc - success" do
+    :meck.new(RpcRequest, [:passthrough])
+    :meck.expect(RpcRequest, :save, fn _,_ -> {:ok, %RpcRequest{}} end)
+
+    :meck.new(GenServer, [:unstick, :passthrough])
+    :meck.expect(GenServer, :call, fn _,_ -> :ok end)
+
+    SubscriptionHandler.reject_rpc(nil, "delivery_tag", nil, %RpcRequest{}) == :ok
+  after
+    :meck.unload(RpcRequest)
+    :meck.unload(GenServer)
+  end
+
+  test "reject_rpc - failure" do
+    :meck.new(RpcRequest, [:passthrough])
+    :meck.expect(RpcRequest, :save, fn _,_ -> {:error, %RpcRequest{}} end)
+
+    :meck.new(GenServer, [:unstick, :passthrough])
+    :meck.expect(GenServer, :call, fn _,_ -> :ok end)
+
+    SubscriptionHandler.reject_rpc(nil, "delivery_tag", nil, %RpcRequest{}) == :ok
+  after
+    :meck.unload(RpcRequest)
+    :meck.unload(GenServer)
+  end  
 end
