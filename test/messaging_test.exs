@@ -24,12 +24,16 @@ defmodule OpenAperture.MessagingTest do
   use ExUnit.Case, async: false
 
 	alias OpenAperture.Messaging.Queue
+	alias OpenAperture.Messaging.RpcRequest
 	alias OpenAperture.Messaging.AMQP.ConnectionPool
 	alias OpenAperture.Messaging.AMQP.ConnectionPools
 	alias OpenAperture.Messaging.AMQP.Exchange, as: AMQPExchange 
+	alias OpenAperture.Messaging.AMQP.RpcHandler
 
   alias OpenAperture.Messaging.ConsumerTest
   alias OpenAperture.Messaging.Consumer2Test
+
+  alias OpenAperture.ManagerApi
 
   setup do
     Application.ensure_started(:logger)
@@ -501,4 +505,59 @@ defmodule OpenAperture.MessagingTest do
   after
   	:meck.unload(ConnectionPools)
   end  
+
+  #=============================
+  # publish_rpc tests
+
+  test "publish_rpc attribute options - success" do
+  	:meck.new(ConnectionPools, [:passthrough])
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> %{} end)
+
+  	:meck.new(RpcHandler, [:passthrough])
+  	:meck.expect(RpcHandler, :start_link, fn _,_,_,_ -> {:ok, %{}} end)
+
+		queue = %Queue{
+			name: "test_queue", 
+			exchange: %AMQPExchange{name: "aws:us-east-1b", options: [:durable]},
+			error_queue: "test_queue_error",
+			options: [durable: true, arguments: [{"x-dead-letter-exchange", :longstr, ""},{"x-dead-letter-routing-key", :longstr, "test_queue_error"}]],
+			binding_options: [routing_key: "test_queue"]
+		}
+
+		request = %RpcRequest{
+			id: 123,
+			request_body: %{}
+		}
+
+  	{subscribe_result, handler} = ConsumerTest.publish_rpc(queue, ManagerApi.get_api, request)
+  	assert subscribe_result == :ok
+  	assert handler != nil
+  after
+  	:meck.unload(ConnectionPools)
+  	:meck.unload(RpcHandler)
+  end
+
+  test "publish_rpc attribute options - get_pool failure" do
+  	:meck.new(ConnectionPools, [:passthrough])
+  	:meck.expect(ConnectionPools, :get_pool, fn _ -> nil end)
+
+		queue = %Queue{
+			name: "test_queue", 
+			exchange: %AMQPExchange{name: "aws:us-east-1b", options: [:durable]},
+			error_queue: "test_queue_error",
+			options: [durable: true, arguments: [{"x-dead-letter-exchange", :longstr, ""},{"x-dead-letter-routing-key", :longstr, "test_queue_error"}]],
+			binding_options: [routing_key: "test_queue"]
+		}
+
+		request = %RpcRequest{
+			id: 123,
+			request_body: %{}
+		}		
+
+  	{subscribe_result, reason} = ConsumerTest.publish_rpc(queue, ManagerApi.get_api, request)
+  	assert subscribe_result == :error
+  	assert reason != nil
+  after
+  	:meck.unload(ConnectionPools)
+  end
 end

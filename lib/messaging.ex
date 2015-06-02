@@ -79,6 +79,7 @@ defmodule OpenAperture.Messaging do
       alias OpenAperture.Messaging.Queue
       alias OpenAperture.Messaging.AMQP.ConnectionPools
 			alias OpenAperture.Messaging.AMQP.ConnectionPool
+      alias OpenAperture.Messaging.AMQP.RpcHandler
 
 		  @doc """
 		  Subscribes to a specific queue within the Messaging system.
@@ -176,6 +177,38 @@ defmodule OpenAperture.Messaging do
 					_ -> {:error, "[Messaging] Connection type #{inspect ConnectionOptions.type(connection_options)} is unknown!"}
 				end
 		  end
+
+      @doc """
+      Publishes a an RPC request to a specific queue within the Messaging system
+
+      ## Options
+
+      The `connection_options` options value provides the ConnectionOptions; defaults to the @connection_options attribute
+
+      The `queue` options value provides the Queue to which to subscribe
+
+      The `request` option represents the message data
+
+      ## Returns
+      
+      {:ok, OpenAperture.Messaging.AMQP.RpcHandler} | {:error, reason}
+      """
+      @spec publish_rpc(ConnectionOptions.t, Queue.t, term) :: {:ok, pid} | {:error, String.t()} 
+      def publish_rpc(connection_options \\ @connection_options, queue, api, request) do
+        case ConnectionOptions.type(connection_options) do
+          nil -> {:error, "[Messaging] The connection options do not have a type defined!"}
+          :amqp ->
+            Logger.debug("[Messaging] Retrieving connection pool for #{connection_options.host}...")
+            connection_pool = ConnectionPools.get_pool(ConnectionOptions.get(connection_options))
+            if connection_pool == nil do
+              {:error, "[Messaging] Unable to publish RPC request - failed to retrieve a connection pool for #{connection_options.host}!"}
+            else            
+              Logger.debug("[Messaging] Genearting an RPC request...")
+              RpcHandler.start_link(api, request, connection_pool, queue)
+            end
+          _ -> {:error, "[Messaging] Connection type #{inspect ConnectionOptions.type(connection_options)} is unknown!"}
+        end
+      end
 
       @doc """
       Method to completely close a connection (and all associated subscriptions, channels, connections, etc...)

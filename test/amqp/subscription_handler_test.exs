@@ -8,6 +8,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
   alias AMQP.Queue
 
   alias OpenAperture.Messaging.AMQP.SubscriptionHandler
+  alias OpenAperture.Messaging.RpcRequest
 
   alias OpenAperture.Messaging.Queue, as: MessagingQueue
   alias OpenAperture.Messaging.AMQP.Exchange, as: MessagingExchange
@@ -696,6 +697,35 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandlerTest do
     SubscriptionHandler.handle_call({:acknowledge, "delivery_tag"}, %{}, %{}) == {:reply, :ok, %{}}
   after
     :meck.unload(Basic)
+  end
+
+  ## =============================
+  # acknowledge_rpc tests   
+
+  test "acknowledge_rpc - success" do
+    :meck.new(RpcRequest, [:passthrough])
+    :meck.expect(RpcRequest, :save, fn _,_ -> {:ok, %RpcRequest{}} end)
+
+    :meck.new(GenServer, [:unstick, :passthrough])
+    :meck.expect(GenServer, :call, fn _,_ -> :ok end)
+
+    SubscriptionHandler.acknowledge_rpc(nil, "delivery_tag", nil, %RpcRequest{}) == :ok
+  after
+    :meck.unload(RpcRequest)
+    :meck.unload(GenServer)
+  end
+
+  test "acknowledge_rpc - failure" do
+    :meck.new(RpcRequest, [:passthrough])
+    :meck.expect(RpcRequest, :save, fn _,_ -> {:error, %RpcRequest{}} end)
+
+    :meck.new(GenServer, [:unstick, :passthrough])
+    :meck.expect(GenServer, :call, fn _,_ -> :ok end)
+
+    SubscriptionHandler.acknowledge_rpc(nil, "delivery_tag", nil, %RpcRequest{}) == :ok
+  after
+    :meck.unload(RpcRequest)
+    :meck.unload(GenServer)
   end
 
   ## =============================

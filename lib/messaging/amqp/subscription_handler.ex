@@ -9,6 +9,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
 	use GenServer
 	use AMQP
 
+  alias OpenAperture.Messaging.RpcRequest
   @moduledoc """
   This module contains the GenServer for managing subscription callbacks
   """  
@@ -75,16 +76,38 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
 
   The `delivery_tag` option defines the delivery tag of the messsage
 
-  The `_from` option defines the tuple {from, ref}
-
-  The `state` option represents the server's current state
-
   ## Return Value
   :ok
   """
   @spec acknowledge(pid, String.t()) :: :ok
   def acknowledge(subscription_handler, delivery_tag) do
   	GenServer.call(subscription_handler, {:acknowledge, delivery_tag})
+  end
+
+  @doc """
+  Method to acknowledge an RPC request from via the handler server
+
+  ## Options
+
+  The `subscription_handler` option defines the PID of the SubscriptionHandler
+
+  The `delivery_tag` option defines the delivery tag of the messsage
+
+  The `api` option defines the ManagerApi that should be used for updates
+
+  The `rpc_request` option represents the RpcRequest to be updated
+
+  ## Return Value
+  :ok
+  """
+  @spec acknowledge_rpc(pid, String.t(), pid, RpcRequest.t) :: :ok
+  def acknowledge_rpc(subscription_handler, delivery_tag, api, rpc_request) do
+    case RpcRequest.save(api, rpc_request) do
+      {:ok, request} -> Logger.debug("Successfully updated RPC request (acknowledging tag #{delivery_tag})")
+      {:error, request} -> Logger.error("Failed to update RPC request (acknowledging tag #{delivery_tag})!")
+    end
+
+    GenServer.call(subscription_handler, {:acknowledge, delivery_tag})
   end
 
   @doc """
