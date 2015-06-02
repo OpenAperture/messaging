@@ -103,8 +103,8 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   @spec acknowledge_rpc(pid, String.t(), pid, RpcRequest.t) :: :ok
   def acknowledge_rpc(subscription_handler, delivery_tag, api, rpc_request) do
     case RpcRequest.save(api, rpc_request) do
-      {:ok, request} -> Logger.debug("Successfully updated RPC request (acknowledging tag #{delivery_tag})")
-      {:error, request} -> Logger.error("Failed to update RPC request (acknowledging tag #{delivery_tag})!")
+      {:ok, _} -> Logger.debug("Successfully updated RPC request (acknowledging tag #{delivery_tag})")
+      {:error, _} -> Logger.error("Failed to update RPC request (acknowledging tag #{delivery_tag})!")
     end
 
     GenServer.call(subscription_handler, {:acknowledge, delivery_tag})
