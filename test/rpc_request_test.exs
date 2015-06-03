@@ -78,7 +78,7 @@ defmodule OpenAperture.Messaging.RpcRequestTest do
 
   test "save - existing request success" do
     :meck.new(MessagingRpcRequest, [:passthrough])
-    :meck.expect(MessagingRpcRequest, :update_request!, fn _,_ -> 123 end)
+    :meck.expect(MessagingRpcRequest, :update_request!, fn _,_,_ -> 123 end)
 
     request = %RpcRequest{
       id: 123,
@@ -95,7 +95,7 @@ defmodule OpenAperture.Messaging.RpcRequestTest do
 
   test "save - existing request failed" do
     :meck.new(MessagingRpcRequest, [:passthrough])
-    :meck.expect(MessagingRpcRequest, :update_request!, fn _,_ -> nil end)
+    :meck.expect(MessagingRpcRequest, :update_request!, fn _,_,_ -> nil end)
 
     request = %RpcRequest{
       id: 123,

@@ -70,6 +70,7 @@ defmodule OpenAperture.Messaging.RpcRequest do
   @spec save(pid, RpcRequest.t) :: {:ok, RpcRequest.t} | {:error, RpcRequest.t}
   def save(api, request) do
   	if request.id == nil do
+      Logger.debug("[RpcRequest] Creating new request...")
   		case MessagingRpcRequest.create_request!(api, RpcRequest.to_payload(request)) do
   			nil ->
   				Logger.error("Failed to create RPC request!")
@@ -78,9 +79,10 @@ defmodule OpenAperture.Messaging.RpcRequest do
   				{:ok, %{request | id: id}}
   		end
   	else
-			case MessagingRpcRequest.update_request!(api, RpcRequest.to_payload(request)) do
+      Logger.debug("[RpcRequest] Updating request #{request.id}...")
+			case MessagingRpcRequest.update_request!(api, request.id, RpcRequest.to_payload(request)) do
   			nil ->
-  				Logger.error("Failed to update RPC request!")
+  				Logger.error("[RpcRequest] Failed to update RPC request #{request.id}!")
   				{:error, request}
   			_ ->
   				{:ok, request}
@@ -105,7 +107,7 @@ defmodule OpenAperture.Messaging.RpcRequest do
   def completed?(api, request) do
 		case MessagingRpcRequest.get_request!(api, request.id) do
 			nil ->
-				Logger.error("Failed to retrieve RPC request #{request.id}!")
+				Logger.error("[RpcRequest] Failed to retrieve RPC request #{request.id}!")
 				{true, request}
 			updated_request ->
 				{String.to_atom(updated_request["status"]) == :completed || String.to_atom(updated_request["status"]) == :error, 
@@ -129,9 +131,9 @@ defmodule OpenAperture.Messaging.RpcRequest do
   @spec delete(pid, RpcRequest.t) :: term
   def delete(api, request) do
 		if MessagingRpcRequest.delete_request!(api, request.id) do
-			Logger.debug("Successfully deleted RPC request #{request.id}")
+			Logger.debug("[RpcRequest] Successfully deleted RPC request #{request.id}")
 		else
-			Logger.error("Failed to retrieve RPC request #{request.id}!")
+			Logger.error("[RpcRequest] Failed to retrieve RPC request #{request.id}!")
 		end  	
   end
 end
