@@ -69,18 +69,19 @@ defmodule OpenAperture.Messaging.RpcRequest do
   """
   @spec save(pid, RpcRequest.t) :: {:ok, RpcRequest.t} | {:error, RpcRequest.t}
   def save(api, request) do
+    payload = RpcRequest.to_payload(request)
   	if request.id == nil do
       Logger.debug("[RpcRequest] Creating new request...")
-  		case MessagingRpcRequest.create_request!(api, RpcRequest.to_payload(request)) do
+  		case MessagingRpcRequest.create_request!(api, payload) do
   			nil ->
-  				Logger.error("Failed to create RPC request!")
+  				Logger.error("[RpcRequest] Failed to create RPC request!")
   				{:error, request}
   			id ->
   				{:ok, %{request | id: id}}
   		end
   	else
       Logger.debug("[RpcRequest] Updating request #{request.id}...")
-			case MessagingRpcRequest.update_request!(api, request.id, RpcRequest.to_payload(request)) do
+			case MessagingRpcRequest.update_request!(api, request.id, payload) do
   			nil ->
   				Logger.error("[RpcRequest] Failed to update RPC request #{request.id}!")
   				{:error, request}
