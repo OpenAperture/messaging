@@ -81,13 +81,19 @@ defmodule OpenAperture.Messaging.RpcRequest do
   		end
   	else
       Logger.debug("[RpcRequest] Updating request #{request.id}...")
-			case MessagingRpcRequest.update_request!(api, request.id, payload) do
-  			nil ->
-  				Logger.error("[RpcRequest] Failed to update RPC request #{request.id}!")
-  				{:error, request}
-  			_ ->
-  				{:ok, request}
-  		end  		
+      case MessagingRpcRequest.get_request!(api, request.id) do
+        nil -> 
+          Logger.debug("[RpcRequest] Request #{request.id} no longer exists, update will be discarded.")
+          {:ok, request}
+        _ ->
+    			case MessagingRpcRequest.update_request!(api, request.id, payload) do
+      			nil ->
+      				Logger.error("[RpcRequest] Failed to update RPC request #{request.id}!")
+      				{:error, request}
+      			_ ->
+      				{:ok, request}
+      		end
+      end
   	end
   end
 
