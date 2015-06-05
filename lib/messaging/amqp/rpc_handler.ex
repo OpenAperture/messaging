@@ -126,7 +126,11 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandler do
   def handle_cast({:response_status, api, request}, state) do
     {completed, updated_request} = RpcRequest.completed?(api, request)
     if completed do
-      Agent.update(state[:response_agent], fn _ -> {:completed, updated_request.response_body} end)
+      if updated_request.status == :completed do
+        Agent.update(state[:response_agent], fn _ -> {:completed, updated_request.response_body} end)
+      else
+        Agent.update(state[:response_agent], fn _ -> {:error, updated_request.response_body} end)
+      end
       RpcRequest.delete(api, request)
     else
       :timer.sleep(1000)

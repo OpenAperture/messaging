@@ -121,8 +121,9 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandlerTest do
   #===================================
   # handle_cast({:execute}) tests
 
-  test "handle_cast({:response_status}) - success" do
+  test "handle_cast({:response_status}) - handle error status" do
     request = %RpcRequest{
+      status: :error,
       request_body: %{},
       response_body: %{}
     }
@@ -132,6 +133,29 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandlerTest do
     :meck.expect(RpcRequest, :delete, fn _,_ -> :ok end)
 
     {:ok, agent} = Agent.start_link(fn -> {:not_started, nil} end)
+
+    {:noreply, state} = RpcHandler.handle_cast({:response_status, nil, request}, %{response_agent: agent})
+    assert state[:response_agent] != nil
+
+    {status, response} = Agent.get(agent, fn response -> response end)    
+    assert status == :error
+    assert response == %{}
+  after
+    :meck.unload(RpcRequest)    
+  end
+
+  test "handle_cast({:response_status}) - success" do
+    request = %RpcRequest{
+      status: :completed,
+      request_body: %{},
+      response_body: %{}
+    }
+
+    :meck.new(RpcRequest, [:passthrough])
+    :meck.expect(RpcRequest, :completed?, fn _,_ -> {true, request} end)
+    :meck.expect(RpcRequest, :delete, fn _,_ -> :ok end)
+
+    {:ok, agent} = Agent.start_link(fn -> {:completed, nil} end)
 
     {:noreply, state} = RpcHandler.handle_cast({:response_status, nil, request}, %{response_agent: agent})
     assert state[:response_agent] != nil
