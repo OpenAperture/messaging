@@ -119,6 +119,7 @@ defmodule OpenAperture.Messaging.RpcRequest do
       {String.to_atom(updated_request["status"]) == :completed || String.to_atom(updated_request["status"]) == :error, 
         RpcRequest.from_payload(%{
           id: updated_request["id"],
+          status: String.to_atom(updated_request["status"]),
           request_body: updated_request["request_body"],
           response_body: updated_request["response_body"],
       })}      

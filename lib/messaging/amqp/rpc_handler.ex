@@ -130,7 +130,7 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandler do
         Logger.debug("[Messaging][RpcHandler][#{request.id}] Request has completed successfully")
         Agent.update(state[:response_agent], fn _ -> {:completed, updated_request.response_body} end)
       else
-        Logger.error("[Messaging][RpcHandler][#{request.id}] Request has failed")
+        Logger.error("[Messaging][RpcHandler][#{request.id}] Request has failed:  #{inspect updated_request.status}")
         Agent.update(state[:response_agent], fn _ -> {:error, updated_request.response_body} end)
       end
       RpcRequest.delete(api, request)
