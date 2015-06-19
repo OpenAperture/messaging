@@ -89,7 +89,7 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandler do
   """
   @spec handle_cast({:execute, pid, RpcRequest.t, pid, OpenAperture.Messaging.Queue.t}, Map) :: {:noreply, Map}
   def handle_cast({:execute, api, request, connection_pool, queue}, state) do
-    Logger.debug("[Messaging] Publishing RPC request to connection pool...")
+    Logger.debug("[Messaging][RpcHandler] Publishing RPC request to connection pool...")
 
     {status, request} = RpcRequest.save(api, request)
     if status == :ok do
@@ -101,7 +101,7 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandler do
           GenServer.cast(self, {:response_status, api, request})
       end      
     else
-      Logger.error("Failed to save RPC request!")
+      Logger.error("[Messaging][RpcHandler] Failed to save RPC request!")
       Agent.update(state[:response_agent], fn _ -> {:error, "Failed to save RPC request!"} end)
     end
 
@@ -127,8 +127,10 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandler do
     {completed, updated_request} = RpcRequest.completed?(api, request)
     if completed do
       if updated_request.status == :completed do
+        Logger.debug("[Messaging][RpcHandler][#{request.id}] Request has completed successfully")
         Agent.update(state[:response_agent], fn _ -> {:completed, updated_request.response_body} end)
       else
+        Logger.error("[Messaging][RpcHandler][#{request.id}] Request has failed")
         Agent.update(state[:response_agent], fn _ -> {:error, updated_request.response_body} end)
       end
       RpcRequest.delete(api, request)

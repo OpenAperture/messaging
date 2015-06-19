@@ -134,7 +134,7 @@ defmodule OpenAperture.Messaging.RpcRequestTest do
 
   test "completed? - success" do
     :meck.new(MessagingRpcRequest, [:passthrough])
-    :meck.expect(MessagingRpcRequest, :get_request!, fn _,_ -> %{"id" => 123, "status" => "completed"} end)
+    :meck.expect(MessagingRpcRequest, :get_request, fn _,_ -> %OpenAperture.ManagerApi.Response{status: 200, success?: true, body: %{"id" => 123, "status" => "completed"}} end)
 
     request = %RpcRequest{
       id: 123,
@@ -151,7 +151,7 @@ defmodule OpenAperture.Messaging.RpcRequestTest do
 
   test "completed? - success not completed" do
     :meck.new(MessagingRpcRequest, [:passthrough])
-    :meck.expect(MessagingRpcRequest, :get_request!, fn _,_ -> %{"id" => 123, "status" => "in_progress"} end)
+    :meck.expect(MessagingRpcRequest, :get_request, fn _,_ -> %OpenAperture.ManagerApi.Response{status: 200, success?: true, body: %{"id" => 123, "status" => "in_progress"}} end)
 
     request = %RpcRequest{
       id: 123,
@@ -168,7 +168,7 @@ defmodule OpenAperture.Messaging.RpcRequestTest do
 
   test "completed? - failed" do
     :meck.new(MessagingRpcRequest, [:passthrough])
-    :meck.expect(MessagingRpcRequest, :get_request!, fn _,_ -> nil end)
+    :meck.expect(MessagingRpcRequest, :get_request, fn _,_ -> %OpenAperture.ManagerApi.Response{status: 404, success?: false, raw_body: ""} end)
 
     request = %RpcRequest{
       id: 123,

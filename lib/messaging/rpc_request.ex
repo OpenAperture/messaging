@@ -80,15 +80,15 @@ defmodule OpenAperture.Messaging.RpcRequest do
   				{:ok, %{request | id: id}}
   		end
   	else
-      Logger.debug("[RpcRequest] Updating request #{request.id}...")
+      Logger.debug("[RpcRequest][#{request.id}] Updating request...")
       case MessagingRpcRequest.get_request!(api, request.id) do
         nil -> 
-          Logger.debug("[RpcRequest] Request #{request.id} no longer exists, update will be discarded.")
+          Logger.debug("[RpcRequest][#{request.id}] Request no longer exists, update will be discarded.")
           {:ok, request}
         _ ->
     			case MessagingRpcRequest.update_request!(api, request.id, payload) do
       			nil ->
-      				Logger.error("[RpcRequest] Failed to update RPC request #{request.id}!")
+      				Logger.error("[RpcRequest][#{request.id}] Failed to update RPC request!")
       				{:error, request}
       			_ ->
       				{:ok, request}
@@ -112,18 +112,20 @@ defmodule OpenAperture.Messaging.RpcRequest do
   """
   @spec completed?(pid, RpcRequest.t) :: {true, RpcRequest.t} | {false, RpcRequest.t}
   def completed?(api, request) do
-		case MessagingRpcRequest.get_request!(api, request.id) do
-			nil ->
-				Logger.error("[RpcRequest] Failed to retrieve RPC request #{request.id}!")
-				{true, request}
-			updated_request ->
-				{String.to_atom(updated_request["status"]) == :completed || String.to_atom(updated_request["status"]) == :error, 
-					RpcRequest.from_payload(%{
-						id: updated_request["id"],
-						request_body: updated_request["request_body"],
-						response_body: updated_request["response_body"],
-				})}
-		end  	
+		response = MessagingRpcRequest.get_request(api, request.id)
+    if response.success? do
+      Logger.debug("[RpcRequest][#{request.id}] Successfully retrieved the updated RPC request")
+      updated_request = response.body
+      {String.to_atom(updated_request["status"]) == :completed || String.to_atom(updated_request["status"]) == :error, 
+        RpcRequest.from_payload(%{
+          id: updated_request["id"],
+          request_body: updated_request["request_body"],
+          response_body: updated_request["response_body"],
+      })}      
+    else
+			Logger.error("[RpcRequest][#{request.id}] Failed to retrieve RPC request, the server returned a #{inspect response.status}:  #{inspect response.raw_body}")
+			{true, request}
+    end				
   end
 
   @doc """
@@ -138,9 +140,9 @@ defmodule OpenAperture.Messaging.RpcRequest do
   @spec delete(pid, RpcRequest.t) :: term
   def delete(api, request) do
 		if MessagingRpcRequest.delete_request!(api, request.id) do
-			Logger.debug("[RpcRequest] Successfully deleted RPC request #{request.id}")
+			Logger.debug("[RpcRequest][#{request.id}] Successfully deleted RPC request")
 		else
-			Logger.error("[RpcRequest] Failed to retrieve RPC request #{request.id}!")
+			Logger.error("[RpcRequest][#{request.id}] Failed to retrieve RPC request!")
 		end  	
   end
 end
