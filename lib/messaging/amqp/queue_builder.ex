@@ -31,8 +31,12 @@ defmodule OpenAperture.Messaging.AMQP.QueueBuilder do
 
   {:ok, pid} | {:error, reason}
   """
-  @spec build(pid, String.t(), String.t(), List) :: OpenAperture.Messaging.Queue.t
-	def build(api, queue_name, exchange_id, options \\ []) do
+  @spec build(pid, String.t(), String.t(), List, String.t() | :queue_name) :: OpenAperture.Messaging.Queue.t
+	def build(api, queue_name, exchange_id, options \\ [], routing_key \\ :queue_name) do
+    routing_key = case routing_key do
+      :queue_name -> queue_name
+      _           -> routing_key
+    end
     options_default = [
       durable: true, 
       arguments: [{"x-dead-letter-exchange", :longstr, ""},{"x-dead-letter-routing-key", :longstr, "#{queue_name}_error"}]
@@ -43,7 +47,7 @@ defmodule OpenAperture.Messaging.AMQP.QueueBuilder do
       exchange: ExchangeResolver.get(api, exchange_id),
       error_queue: "#{queue_name}_error",
       options: Keyword.merge(options_default, options),
-      binding_options: [routing_key: queue_name]
+      binding_options: [routing_key: routing_key]
     }
 	end
 end
