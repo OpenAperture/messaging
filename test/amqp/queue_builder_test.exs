@@ -50,7 +50,7 @@ defmodule OpenAperture.Messaging.AMQP.QueueBuilderTest do
     :meck.new(ExchangeResolver, [:passthrough])
     :meck.expect(ExchangeResolver, :get, fn _,_ -> %OpenAperture.Messaging.AMQP.Exchange{name: ""} end)
 
-    queue = QueueBuilder.build(ManagerApi.get_api, "test_queue", "1", [], "my_routing_key")
+    queue = QueueBuilder.build(ManagerApi.get_api, "test_queue", "1", [], [routing_key: "my_routing_key"])
     assert queue != nil
     assert queue.exchange != nil
     assert queue.binding_options[:routing_key] == "my_routing_key"
