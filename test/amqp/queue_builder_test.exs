@@ -57,4 +57,26 @@ defmodule OpenAperture.Messaging.AMQP.QueueBuilderTest do
   after
     :meck.unload(ExchangeResolver)
   end  
+
+  test "build_with_exchange - success" do
+    queue = QueueBuilder.build_with_exchange("test_queue", %OpenAperture.Messaging.AMQP.Exchange{name: ""})
+    assert queue != nil
+    assert queue.exchange != nil
+    assert queue.binding_options[:routing_key] == queue.name
+  end
+
+  test "build_with_exchange - success with options" do
+    queue = QueueBuilder.build_with_exchange("test_queue", %OpenAperture.Messaging.AMQP.Exchange{name: ""}, [durable: false])
+    assert queue != nil
+    assert queue.exchange != nil
+    assert queue.binding_options[:routing_key] == queue.name
+    assert Keyword.get(queue.options, :durable) == false
+  end  
+
+  test "build_with_exchange - success with routing_key" do
+    queue = QueueBuilder.build_with_exchange("test_queue", %OpenAperture.Messaging.AMQP.Exchange{name: ""}, [], [routing_key: "my_routing_key"])
+    assert queue != nil
+    assert queue.exchange != nil
+    assert queue.binding_options[:routing_key] == "my_routing_key"
+  end  
 end
