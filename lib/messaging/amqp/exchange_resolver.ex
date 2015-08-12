@@ -66,7 +66,7 @@ defmodule OpenAperture.Messaging.AMQP.ExchangeResolver do
 
   {:reply, AMQPExchange.t, state}
   """
-  @spec handle_call({:get, pid, String.t()}, term, Map) :: {:reply, AMQPExchange.t, Map}
+  @spec handle_call({:get, pid, String.t}, term, map) :: {:reply, AMQPExchange.t, map}
   def handle_call({:get, api, exchange_id}, _from, state) do
     if cache_stale?(state) do
       state = %{
@@ -92,7 +92,7 @@ defmodule OpenAperture.Messaging.AMQP.ExchangeResolver do
 
   Boolean
   """
-  @spec cache_stale?(Map) :: term
+  @spec cache_stale?(map) :: boolean
   def cache_stale?(cache) do
     if cache == nil || cache[:retrieval_time] == nil do
       true

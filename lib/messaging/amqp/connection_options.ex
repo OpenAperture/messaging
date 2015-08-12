@@ -114,7 +114,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionOptions do
 
 	  KeywordList
 	  """
-	  @spec get(any) :: List
+	  @spec get(OpenAperture.Messaging.AMQP.ConnectionOptions.t) :: list
 	  def get(options) do
 			[
 				username: options.username,

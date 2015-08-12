@@ -122,7 +122,7 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandler do
 
   {:noreply, Map}
   """
-  @spec handle_cast({:response_status, pid, RpcRequest.t, pid}, Map) :: {:noreply, Map}
+  @spec handle_cast({:response_status, pid, RpcRequest.t, pid}, map) :: {:noreply, map}
   def handle_cast({:response_status, api, request}, state) do
     {completed, updated_request} = RpcRequest.completed?(api, request)
     if completed do

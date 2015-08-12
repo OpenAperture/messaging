@@ -29,7 +29,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
 
   pid or rasies an error
   """
-  @spec subscribe(Map) :: pid
+  @spec subscribe(map) :: pid
   def subscribe(options) do
     case GenServer.start_link(__MODULE__, options) do
     	{:ok, subscription_handler} -> 
@@ -62,7 +62,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Return Value
   :ok
   """
-  @spec get_subscription_options(pid) :: Map
+  @spec get_subscription_options(pid) :: map
   def get_subscription_options(subscription_handler) do
   	GenServer.call(subscription_handler, {:get_subscription_options})
   end
@@ -184,7 +184,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Return Value
   {:reply, :ok, state}
   """
-  @spec handle_call({:unsubscribe}, term, Map) :: {:reply, :ok, Map}
+  @spec handle_call({:unsubscribe}, term, map) :: {:reply, :ok, map}
   def handle_call({:unsubscribe}, _from, %{channel: channel, consumer_tag: consumer_tag} = state) do
     unless consumer_tag == nil do
       Basic.cancel(channel, consumer_tag)
@@ -207,7 +207,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Return Value
   {:reply, state, state}
   """
-  @spec handle_call({:get_subscription_options}, term, Map) :: {:reply, :ok, Map}
+  @spec handle_call({:get_subscription_options}, term, map) :: {:reply, :ok, map}
   def handle_call({:get_subscription_options}, _from, state) do
   	{:reply, state, state}
   end
@@ -226,7 +226,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Return Value
   {:reply, state, state}
   """
-  @spec handle_call({:set_subscription_options, Map}, term, Map) :: {:reply, Map, Map}
+  @spec handle_call({:set_subscription_options, map}, term, map) :: {:reply, map, map}
   def handle_call({:set_subscription_options, options}, _from, _state) do
     {:reply, options, options}
   end
@@ -243,7 +243,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Return Value
   {:reply, :ok, state}
   """
-  @spec handle_call({:subscribe_sync}, term, Map) :: {:reply, :ok, Map}
+  @spec handle_call({:subscribe_sync}, term, map) :: {:reply, :ok, map}
   def handle_call({:subscribe_sync}, _from, %{channel: channel, exchange: exchange, queue: queue, callback_handler: _callback_handler} = state) do
   	Logger.debug("[SubscriptionHandler] Subscribing synchronously to queue #{queue.name}...")
 
@@ -280,7 +280,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Return Value
   {:reply, :ok, state}
   """
-  @spec handle_call({:subscribe_async}, term, Map) :: {:reply, :ok, Map}
+  @spec handle_call({:subscribe_async}, term, map) :: {:reply, :ok, map}
   def handle_call({:subscribe_async}, _from, %{channel: channel, exchange: exchange, queue: queue, callback_handler: callback_handler} = state) do
   	Logger.debug("[SubscriptionHandler] Subscribing asynchronously queue #{queue.name}...")
 
@@ -331,7 +331,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Return Value
   {:reply, :ok, state}
   """
-  @spec handle_call({:process_request, Map, Map}, term, Map) :: {:reply, :ok, Map}
+  @spec handle_call({:process_request, map, map}, term, map) :: {:reply, :ok, map}
   def handle_call({:process_request, payload, meta}, _from, state) do
     execute_callback_handler(state, self(), payload, meta)
     {:reply, :ok, state}
@@ -351,7 +351,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Return Value
   {:reply, :ok, state}
   """
-  @spec handle_call({:acknowledge, String.t()}, term, Map) :: {:reply, :ok, Map}
+  @spec handle_call({:acknowledge, String.t()}, term, map) :: {:reply, :ok, map}
   def handle_call({:acknowledge, delivery_tag}, _from, state) do
     Logger.debug("[SubscriptionHandler] Acknowledging message #{delivery_tag} on channel #{inspect state[:channel]}")
     Basic.ack(state[:channel], delivery_tag)
@@ -374,7 +374,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Return Value
   {:reply, :ok, state}
   """
-  @spec handle_call({:reject, String.t(), term}, term, Map) :: {:reply, :ok, Map}
+  @spec handle_call({:reject, String.t(), term}, term, map) :: {:reply, :ok, map}
   def handle_call({:reject, delivery_tag, redeliver}, _from, state) do
     Logger.debug("[SubscriptionHandler] Rejecting message #{delivery_tag} on channel #{inspect state[:channel]}")
     Basic.reject(state[:channel], delivery_tag, requeue: redeliver)
@@ -394,7 +394,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
 
   The `meta` option represents the metadata associated with the message
   """
-  @spec execute_callback_handler(Map, pid, term, Map) :: term
+  @spec execute_callback_handler(map, pid, term, map) :: term
   def execute_callback_handler(subscription_handler_options, subscription_handler, payload, %{delivery_tag: delivery_tag, redelivered: redelivered} = meta) do   
   	case deserialize_payload(payload, delivery_tag) do
   		{false, _} -> 

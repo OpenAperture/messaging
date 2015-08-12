@@ -21,7 +21,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionSupervisor do
 
   {:ok, pid} | {:error, reason}
   """
-  @spec start_link() :: {:ok, pid} | {:error, String.t()} 
+  @spec start_link() :: Supervisor.on_start
   def start_link do
     Logger.info("[ConnectionSupervisor] Starting...")
     :supervisor.start_link(__MODULE__, [])

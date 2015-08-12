@@ -86,7 +86,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   {:reply, OpenAperture.Messaging.ConnectionOptions.t, resolved_state}
   """
-  @spec handle_call({:get_for_broker, term, String.t(), String.t(), String.t()}, term, Map) :: {:reply, OpenAperture.Messaging.ConnectionOptions.t, Map}
+  @spec handle_call({:get_for_broker, pid, String.t()}, term, map) :: {:reply, OpenAperture.Messaging.ConnectionOptions.t, map}
   def handle_call({:get_for_broker, api, broker_id}, _from, state) do
     {connection_option, resolved_state} = get_connection_option_for_broker(state, api, broker_id)
 
@@ -130,12 +130,12 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
     {connection_option, resolved_state} = cond do
       #if the dest is restricted, we have to use the dest broker options
-      dest_exchange_restrictions != nil && length(dest_exchange_restrictions) > 0 -> 
+      length(dest_exchange_restrictions) > 0 -> 
         get_connection_option_for_brokers(resolved_state, api, dest_exchange_restrictions)
 
       #if the src is restricted, we have to use the dest broker options (don't know if src can connect to dest)
-      src_exchange_restrictions != nil && length(src_exchange_restrictions) > 0 -> 
-        if dest_exchange_restrictions == nil || length(dest_exchange_restrictions) == 0 do
+      length(src_exchange_restrictions) > 0 -> 
+        if length(dest_exchange_restrictions) == 0 do
           Logger.warn("[ConnectionOptionsResolver] The source exchange #{src_exchange_id} has restrictions, but no restrictions on destination exchange #{dest_exchange_id} were found.  Attempting to use source restrictions (but this may not work)...")
           get_connection_option_for_brokers(resolved_state, api, src_exchange_restrictions)
         else
@@ -189,7 +189,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   {Map, state}
   """
-  @spec get_connection_option_for_brokers(Map, term, String.t()) :: {term, Map}
+  @spec get_connection_option_for_brokers(map, pid, list) :: {term, map}
   def get_connection_option_for_brokers(state, api, brokers) do
     idx = :random.uniform(length(brokers))-1
     {broker, _cur_idx} = Enum.reduce brokers, {nil, 0}, fn (cur_broker, {broker, cur_idx}) ->
@@ -218,7 +218,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   {Map, state}
   """
-  @spec get_connection_option_for_broker(Map, term, String.t()) :: {term, Map}
+  @spec get_connection_option_for_broker(map, term, String.t()) :: {term, map}
   def get_connection_option_for_broker(state, api, broker_id) do
     {connection_options, resolved_state} = case get_connection_options_from_cache(state, broker_id) do
       nil ->
@@ -279,7 +279,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   Map
   """
-  @spec get_connection_options_from_cache(Map, String.t()) :: List | nil
+  @spec get_connection_options_from_cache(map, String.t()) :: list | nil
   def get_connection_options_from_cache(state, broker_id) do
     broker_id_cache = state[:broker_connection_options][broker_id]
     if cache_stale?(broker_id_cache) do
@@ -306,7 +306,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   updated state
   """
-  @spec cache_connection_options(Map, String.t(), List) :: List
+  @spec cache_connection_options(map, String.t(), Keyword.t) :: map
   def cache_connection_options(state, broker_id, connection_options) do
     broker_id_cache = %{
       retrieval_time: :calendar.universal_time,
@@ -332,7 +332,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   Map of the MessagingBroker
   """
-  @spec get_broker(Map, String.t, pid) :: {Map | nil, Map}
+  @spec get_broker(map, String.t, pid) :: {map | nil, map}
   def get_broker(state, broker_id, api) do
     broker_cache = state[:brokers][broker_id]
     if cache_stale?(broker_cache) do
@@ -369,7 +369,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   Map
   """
-  @spec resolve_connection_option_for_broker(List) :: {term, Map} | nil
+  @spec resolve_connection_option_for_broker([term]) :: term | nil
   def resolve_connection_option_for_broker(connection_options) do
     if connection_options != nil && length(connection_options) > 0 do
       idx = :random.uniform(length(connection_options))-1
@@ -401,7 +401,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   {List of broker Maps, state}
   """
-  @spec get_restrictions_for_exchange(Map, term, String.t()) :: {List, Map}
+  @spec get_restrictions_for_exchange(map, term, String.t()) :: {list, map}
   def get_restrictions_for_exchange(state, api, exchange_id) do
     exchange_id_cache = state[:exchanges][exchange_id]
     unless cache_stale?(exchange_id_cache) do

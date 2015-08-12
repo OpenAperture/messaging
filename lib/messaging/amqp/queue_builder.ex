@@ -32,12 +32,12 @@ defmodule OpenAperture.Messaging.AMQP.QueueBuilder do
 
   {:ok, pid} | {:error, reason}
   """
-  @spec build(pid, String.t(), String.t(), List, String.t()) :: OpenAperture.Messaging.Queue.t
+  @spec build(pid, String.t(), String.t(), Keyword.t, Keyword.t | nil) :: Queue.t
   def build(api, queue_name, exchange_id, options \\ [], binding_options \\ nil) do
     build_with_exchange(queue_name, ExchangeResolver.get(api, exchange_id), options, binding_options)
   end
 
-  @spec build_with_exchange(String.t(), AMQPExchange.t, List, String.t()) :: OpenAperture.Messaging.Queue.t
+  @spec build_with_exchange(String.t(), AMQPExchange.t, Keyword.t, Keyword.t | nil) :: Queue.t
   def build_with_exchange(queue_name, exchange, options \\ [], binding_options \\ nil) do
     binding_options = case binding_options do
       nil -> [routing_key: queue_name]
