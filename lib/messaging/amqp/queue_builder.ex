@@ -13,6 +13,7 @@ defmodule OpenAperture.Messaging.AMQP.QueueBuilder do
 
 	alias OpenAperture.Messaging.Queue
 	alias OpenAperture.Messaging.AMQP.ExchangeResolver
+  alias OpenAperture.Messaging.AMQP.Exchange, as: AMQPExchange
 
   @doc """
   Method to build a populated OpenAperture.Messaging.Queue

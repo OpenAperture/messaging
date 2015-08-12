@@ -163,7 +163,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   Boolean
   """
-  @spec cache_stale?(Map) :: term
+  @spec cache_stale?(Map | nil) :: term
   def cache_stale?(cache) do
     if cache == nil || cache[:retrieval_time] == nil do
       true
@@ -279,7 +279,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   Map
   """
-  @spec get_connection_options_from_cache(Map, String.t()) :: List
+  @spec get_connection_options_from_cache(Map, String.t()) :: List | nil
   def get_connection_options_from_cache(state, broker_id) do
     broker_id_cache = state[:broker_connection_options][broker_id]
     if cache_stale?(broker_id_cache) do
@@ -332,7 +332,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   Map of the MessagingBroker
   """
-  @spec get_broker(Map, String.t, pid) :: {Map, Map}
+  @spec get_broker(Map, String.t, pid) :: {Map | nil, Map}
   def get_broker(state, broker_id, api) do
     broker_cache = state[:brokers][broker_id]
     if cache_stale?(broker_cache) do
@@ -369,7 +369,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   Map
   """
-  @spec resolve_connection_option_for_broker(List) :: {term, Map}
+  @spec resolve_connection_option_for_broker(List) :: {term, Map} | nil
   def resolve_connection_option_for_broker(connection_options) do
     if connection_options != nil && length(connection_options) > 0 do
       idx = :random.uniform(length(connection_options))-1

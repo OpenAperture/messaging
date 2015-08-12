@@ -11,9 +11,9 @@
   "json": {:hex, :json, "0.3.2"},
   "jsx": {:hex, :jsx, "2.4.0"},
   "meck": {:hex, :meck, "0.8.2"},
-  "openaperture_auth": {:git, "https://github.com/OpenAperture/auth.git", "227f10bc6108176523b96f016f2fc57adb472320", [ref: "227f10bc6108176523b96f016f2fc57adb472320"]},
-  "openaperture_manager_api": {:git, "https://github.com/OpenAperture/manager_api.git", "8e2f6bdbf9f93dcae2540b1313f9d6dfc0a254a6", [ref: "8e2f6bdbf9f93dcae2540b1313f9d6dfc0a254a6"]},
-  "poison": {:hex, :poison, "1.3.1"},
+  "openaperture_auth": {:git, "https://github.com/OpenAperture/auth.git", "dc7a0813b335d3013dff60d271ae1f51fc4b5049", [ref: "dc7a0813b335d3013dff60d271ae1f51fc4b5049"]},
+  "openaperture_manager_api": {:git, "https://github.com/OpenAperture/manager_api.git", "7bee243e9ae57938b09799ac01a9edc2f722720c", [ref: "7bee243e9ae57938b09799ac01a9edc2f722720c"]},
+  "poison": {:hex, :poison, "1.4.0"},
   "rabbit_common": {:hex, :rabbit_common, "3.5.0"},
   "ssl_verify_hostname": {:hex, :ssl_verify_hostname, "1.0.5"},
   "uuid": {:hex, :uuid, "0.1.5"}}

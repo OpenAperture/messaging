@@ -5,7 +5,6 @@
 #
 defmodule OpenAperture.Messaging.AMQP.Exchange do
 	
-	alias OpenAperture.Messaging.AMQP.Exchange, as: AMQPExchange
   @moduledoc """
   This module contains definition for an AMQP exchange
   """  
@@ -31,11 +30,11 @@ defmodule OpenAperture.Messaging.AMQP.Exchange do
 
   ## Return Values
 
-  AMQPExchange.t
+  t
   """
-  @spec get_failover(AMQPExchange.t) :: AMQPExchange.t
+  @spec get_failover(t) :: t
 	def get_failover(exchange) do
-		%OpenAperture.Messaging.AMQP.Exchange{
+		%__MODULE__{
 			name: exchange.failover_name, 
 			type: exchange.type, 
 	    routing_key: exchange.failover_routing_key,
@@ -53,11 +52,11 @@ defmodule OpenAperture.Messaging.AMQP.Exchange do
 
   ## Return Values
 
-  AMQPExchange.t
+  t
   """
-  @spec from_manager_exchange(Map) :: AMQPExchange.t
+  @spec from_manager_exchange(Map) :: t
 	def from_manager_exchange(manager_exchange) do
-		%OpenAperture.Messaging.AMQP.Exchange{
+		%__MODULE__{
 	    name: manager_exchange["name"],
 	    routing_key: manager_exchange["routing_key"],
 	    root_exchange_name: manager_exchange["root_exchange_name"],

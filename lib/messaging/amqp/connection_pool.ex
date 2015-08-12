@@ -157,9 +157,9 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
 
   ## Return Values
 
-  {:ok, state} | {:ok, state, timeout} | :ignore | {:stop, reason}
+  {:ok, state}
   """  
-  @spec init(term) :: {:ok, term} | {:ok, term, term} | :ignore | {:stop, String.t()}
+  @spec init(term) :: {:ok, Map}
   def init(args) do
     # 2. The init callback now receives the event manager.
     #    We have also changed the manager state from a tuple
@@ -339,7 +339,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
 
     Logger.debug("[ConnectionPool] Closing all subscriptions...")
     channels_subscriptions = Map.values(state[:channels_info][:queues_for_channel])
-    unless channels_subscriptions == nil || length(channels_subscriptions) == 0 do
+    unless length(channels_subscriptions) == 0 do
       Enum.reduce channels_subscriptions, nil, fn(queue_subscriptions, _result) ->
         unless queue_subscriptions == nil || length(queue_subscriptions) == 0 do
           Enum.reduce queue_subscriptions, nil, fn(subscription_handler, _result) ->
@@ -355,7 +355,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
     
     Logger.debug("[ConnectionPool] Closing all channels...")
     channels = Map.values(state[:channels_info][:channels])
-    unless channels == nil || length(channels) == 0 do
+    unless length(channels) == 0 do
       Enum.reduce channels, nil, fn(channel, _result) ->
         try do
           Channel.close(channel)
@@ -367,7 +367,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
 
     Logger.debug("[ConnectionPool] Closing all connections...")
     connections = Map.values(state[:connections_info][:connections])
-    unless connections == nil || length(connections) == 0 do
+    unless length(connections) == 0 do
       Enum.reduce connections, nil, fn(connection, _result) ->
         try do
           Connection.close(connection)

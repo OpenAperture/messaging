@@ -11,6 +11,7 @@
             "elixirc": {
                 "pa": [
                   "${project}/_build/dev/lib/openaperture_messaging/ebin",
+                  "${project}/_build/dev/lib/amqp/ebin",
                 ]
             }
         }
