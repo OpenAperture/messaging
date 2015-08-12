@@ -79,7 +79,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Return Value
   :ok
   """
-  @spec acknowledge(pid, String.t()) :: :ok
+  @spec acknowledge(pid, String.t) :: :ok
   def acknowledge(subscription_handler, delivery_tag) do
   	GenServer.call(subscription_handler, {:acknowledge, delivery_tag})
   end
@@ -100,7 +100,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Return Value
   :ok
   """
-  @spec acknowledge_rpc(pid, String.t(), pid, RpcRequest.t) :: :ok
+  @spec acknowledge_rpc(pid, String.t, pid, RpcRequest.t) :: :ok
   def acknowledge_rpc(subscription_handler, delivery_tag, api, rpc_request) do
     case RpcRequest.save(api, rpc_request) do
       {:ok, _} -> Logger.debug("Successfully updated RPC request (acknowledging tag #{delivery_tag})")
@@ -124,7 +124,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Return Value
   :ok
   """
-  @spec reject(pid, String.t(), term) :: :ok
+  @spec reject(pid, String.t, term) :: :ok
   def reject(subscription_handler, delivery_tag, redeliver \\ false) do
   	GenServer.call(subscription_handler, {:reject, delivery_tag, redeliver})
   end
@@ -147,7 +147,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Return Value
   :ok
   """
-  @spec reject_rpc(pid, String.t(), pid, RpcRequest.t, term) :: :ok
+  @spec reject_rpc(pid, String.t, pid, RpcRequest.t, term) :: :ok
   def reject_rpc(subscription_handler, delivery_tag, api, rpc_request, redeliver \\ false) do
     case RpcRequest.save(api, rpc_request) do
       {:ok, _} -> Logger.debug("Successfully updated RPC request (rejecting tag #{delivery_tag})")
@@ -351,7 +351,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Return Value
   {:reply, :ok, state}
   """
-  @spec handle_call({:acknowledge, String.t()}, term, map) :: {:reply, :ok, map}
+  @spec handle_call({:acknowledge, String.t}, term, map) :: {:reply, :ok, map}
   def handle_call({:acknowledge, delivery_tag}, _from, state) do
     Logger.debug("[SubscriptionHandler] Acknowledging message #{delivery_tag} on channel #{inspect state[:channel]}")
     Basic.ack(state[:channel], delivery_tag)
@@ -374,7 +374,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Return Value
   {:reply, :ok, state}
   """
-  @spec handle_call({:reject, String.t(), term}, term, map) :: {:reply, :ok, map}
+  @spec handle_call({:reject, String.t, term}, term, map) :: {:reply, :ok, map}
   def handle_call({:reject, delivery_tag, redeliver}, _from, state) do
     Logger.debug("[SubscriptionHandler] Rejecting message #{delivery_tag} on channel #{inspect state[:channel]}")
     Basic.reject(state[:channel], delivery_tag, requeue: redeliver)
@@ -454,7 +454,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   {deserialization success/failure, payload}
 
   """
-  @spec deserialize_payload(String.t(), term) :: term  
+  @spec deserialize_payload(String.t, term) :: term  
 	def deserialize_payload(payload, delivery_tag) do
   	try do
     	{true, deserialize(payload)}
@@ -478,7 +478,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   The `subscription_handler` option defines the PID of the SubscriptionHandler that will be used to process the message
 
   """
-  @spec start_async_handler(String.t(), term, pid) :: term  
+  @spec start_async_handler(String.t, term, pid) :: term  
   def start_async_handler(channel, callback_handler, subscription_handler) do
   	Logger.debug("[SubscriptionHandler] Waiting to establish connection...")
 		receive do
@@ -503,7 +503,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   The `subscription_handler` option defines the PID of the SubscriptionHandler that will be used to process the message
 
   """
-  @spec process_async_request(String.t(), term, pid) :: term
+  @spec process_async_request(String.t, term, pid) :: term
   def process_async_request(channel, callback_handler, subscription_handler) do
     receive do
       {:basic_deliver, payload, meta} -> 

@@ -26,7 +26,7 @@ defmodule OpenAperture.Messaging.AMQP.ExchangeResolver do
 
   {:ok, pid} | {:error, reason}
   """
-  @spec start_link() :: {:ok, pid} | {:error, String.t()}   
+  @spec start_link() :: {:ok, pid} | {:error, String.t}   
   def start_link do
     GenServer.start_link(__MODULE__, %{exchanges: %{}}, name: __MODULE__)
   end
@@ -44,7 +44,7 @@ defmodule OpenAperture.Messaging.AMQP.ExchangeResolver do
 
   Returns the correct AMQPExchange
   """
-  @spec get(term, String.t()) :: AMQPExchange.t
+  @spec get(term, String.t) :: AMQPExchange.t
   def get(api, exchange_id) do
     GenServer.call(__MODULE__, {:get, api, exchange_id})
   end
@@ -110,7 +110,7 @@ defmodule OpenAperture.Messaging.AMQP.ExchangeResolver do
 
   AMQPExchange.t
   """
-  @spec get_exchange(pid, String.t()) :: AMQPExchange.t
+  @spec get_exchange(pid, String.t) :: AMQPExchange.t
   def get_exchange(api, exchange_id) do
     case MessagingExchange.get_exchange!(api, exchange_id) do
       nil -> %AMQPExchange{}

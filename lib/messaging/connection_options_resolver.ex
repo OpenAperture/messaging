@@ -24,7 +24,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   {:ok, pid} | {:error, reason}
   """
-  @spec start_link() :: {:ok, pid} | {:error, String.t()}   
+  @spec start_link() :: {:ok, pid} | {:error, String.t}   
   def start_link do
     GenServer.start_link(__MODULE__, %{exchanges: %{}, broker_connection_options: %{}, brokers: %{}}, name: __MODULE__)
   end
@@ -46,7 +46,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   Returns the connection_option
   """
-  @spec resolve(term, String.t(), String.t(), String.t()) :: term
+  @spec resolve(term, String.t, String.t, String.t) :: term
   def resolve(api, src_broker_id, src_exchange_id, dest_exchange_id) do
   	GenServer.call(__MODULE__, {:resolve, api, src_broker_id, src_exchange_id, dest_exchange_id})
   end
@@ -64,7 +64,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   Returns the connection_option
   """
-  @spec get_for_broker(term, String.t()) :: term
+  @spec get_for_broker(term, String.t) :: term
   def get_for_broker(api, broker_id) do
     GenServer.call(__MODULE__, {:get_for_broker, api, broker_id})
   end
@@ -86,7 +86,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   {:reply, OpenAperture.Messaging.ConnectionOptions.t, resolved_state}
   """
-  @spec handle_call({:get_for_broker, pid, String.t()}, term, map) :: {:reply, OpenAperture.Messaging.ConnectionOptions.t, map}
+  @spec handle_call({:get_for_broker, pid, String.t}, term, map) :: {:reply, OpenAperture.Messaging.ConnectionOptions.t, map}
   def handle_call({:get_for_broker, api, broker_id}, _from, state) do
     {connection_option, resolved_state} = get_connection_option_for_broker(state, api, broker_id)
 
@@ -120,7 +120,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   {:reply, OpenAperture.Messaging.ConnectionOptions, resolved_state}
   """
-  @spec handle_call({:resolve, term, String.t(), String.t(), String.t()}, term, Map) :: {:reply, OpenAperture.Messaging.ConnectionOptions.t, Map}
+  @spec handle_call({:resolve, term, String.t, String.t, String.t}, term, Map) :: {:reply, OpenAperture.Messaging.ConnectionOptions.t, Map}
   def handle_call({:resolve, api, src_broker_id, src_exchange_id, dest_exchange_id}, _from, state) do
     #is src exchange restricted?
     {src_exchange_restrictions, resolved_state} = get_restrictions_for_exchange(state, api, src_exchange_id)
@@ -218,7 +218,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   {Map, state}
   """
-  @spec get_connection_option_for_broker(map, term, String.t()) :: {term, map}
+  @spec get_connection_option_for_broker(map, term, String.t) :: {term, map}
   def get_connection_option_for_broker(state, api, broker_id) do
     {connection_options, resolved_state} = case get_connection_options_from_cache(state, broker_id) do
       nil ->
@@ -279,7 +279,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   Map
   """
-  @spec get_connection_options_from_cache(map, String.t()) :: list | nil
+  @spec get_connection_options_from_cache(map, String.t) :: list | nil
   def get_connection_options_from_cache(state, broker_id) do
     broker_id_cache = state[:broker_connection_options][broker_id]
     if cache_stale?(broker_id_cache) do
@@ -306,7 +306,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   updated state
   """
-  @spec cache_connection_options(map, String.t(), Keyword.t) :: map
+  @spec cache_connection_options(map, String.t, Keyword.t) :: map
   def cache_connection_options(state, broker_id, connection_options) do
     broker_id_cache = %{
       retrieval_time: :calendar.universal_time,
@@ -401,7 +401,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   {List of broker Maps, state}
   """
-  @spec get_restrictions_for_exchange(map, term, String.t()) :: {list, map}
+  @spec get_restrictions_for_exchange(map, term, String.t) :: {list, map}
   def get_restrictions_for_exchange(state, api, exchange_id) do
     exchange_id_cache = state[:exchanges][exchange_id]
     unless cache_stale?(exchange_id_cache) do
