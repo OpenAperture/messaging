@@ -27,7 +27,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
 
   {:ok, pid} | {:error, reason}
   """
-  @spec start_link() :: {:ok, pid} | {:error, String.t()}   
+  @spec start_link() :: {:ok, pid} | {:error, String.t}   
   def start_link do
     create()
   end
@@ -41,8 +41,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
 
   {:ok, pid} | {:error, reason}
   """
-  @spec start_link() :: {:ok, pid} | {:error, String.t()}
-  @spec create() :: {:ok, pid} | {:error, String.t()}	
+  @spec create() :: {:ok, pid} | {:error, String.t}	
   def create() do
     GenServer.start_link(__MODULE__, %{pools: %{}, connection_options: %{}}, name: __MODULE__)
   end
@@ -58,7 +57,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
 
   pool | {:error, reason}
   """
-  @spec get_pool(List) :: term | {:error, String.t()}
+  @spec get_pool(list) :: term | {:error, String.t}
   def get_pool(connection_options) do
     GenServer.call(__MODULE__, {:get_pool, connection_options})
   end
@@ -74,7 +73,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
 
   :ok | {:error, reason}
   """
-  @spec remove_pool(List) :: term | {:error, String.t()}
+  @spec remove_pool(list) :: term | {:error, String.t}
   def remove_pool(connection_options) do
     GenServer.call(__MODULE__, {:remove_pool, connection_options})
   end
@@ -93,7 +92,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
 
   {:reply, pool, new_state}
   """  
-  @spec handle_call({:get_pool, List}, term, term) :: {:reply, term, term}
+  @spec handle_call({:get_pool, Keyword.t}, term, term) :: {:reply, term, term}
   def handle_call({:get_pool, connection_options}, _from, state) do
     connection_options = if connection_options[:connection_url] != nil do
       connection_options
@@ -129,7 +128,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
 
   {:reply, :ok, new_state}
   """  
-  @spec handle_call({:remove_pool, List}, term, term) :: {:reply, term, term}
+  @spec handle_call({:remove_pool, list}, term, term) :: {:reply, term, term}
   def handle_call({:remove_pool, connection_options}, _from, state) do
     connection_options = if connection_options[:connection_url] != nil do
       connection_options
@@ -166,7 +165,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
 
   {:ok, pool, state} | {:error, reason, state}
   """
-  @spec start_connection_pool(List, term) :: {:ok, term, term} | {:error, String.t(), term}
+  @spec start_connection_pool(Keyword.t, term) :: {:ok, term, term} | {:error, String.t, term}
   def start_connection_pool(connection_options, state) do
     case ConnectionPool.start_link(connection_options) do
       {:ok, pool} -> 

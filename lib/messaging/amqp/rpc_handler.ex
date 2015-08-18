@@ -27,7 +27,7 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandler do
 
   {:ok, pid} | {:error, reason}
   """
-  @spec start_link(pid, RpcRequest.t, pid, OpenAperture.Messaging.Queue.t) :: {:ok, pid} | {:error, String.t()} 
+  @spec start_link(pid, RpcRequest.t, pid, OpenAperture.Messaging.Queue.t) :: {:ok, pid} | {:error, String.t} 
   def start_link(api, request, connection_pool, queue) do
     case Agent.start_link(fn -> {:not_started, nil} end) do
       {:ok, response_agent} -> 
@@ -122,7 +122,7 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandler do
 
   {:noreply, Map}
   """
-  @spec handle_cast({:response_status, pid, RpcRequest.t, pid}, Map) :: {:noreply, Map}
+  @spec handle_cast({:response_status, pid, RpcRequest.t, pid}, map) :: {:noreply, map}
   def handle_cast({:response_status, api, request}, state) do
     {completed, updated_request} = RpcRequest.completed?(api, request)
     if completed do

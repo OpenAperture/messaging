@@ -98,7 +98,7 @@ defmodule OpenAperture.Messaging do
 		  for AMQP:
         {:ok, subscription_handler} | {:error, reason}
 		  """
-		  @spec subscribe(ConnectionOptions.t, Queue.t, term) :: {:ok, term} | {:error, String.t()} 
+		  @spec subscribe(ConnectionOptions.t, Queue.t, term) :: {:ok, term} | {:error, String.t} 
 			def subscribe(connection_options \\ @connection_options, queue, callback_handler) do
         case ConnectionOptions.type(connection_options) do
 					nil -> {:error, "[Messaging] The connection options do not have a type defined!"}
@@ -129,7 +129,7 @@ defmodule OpenAperture.Messaging do
       for AMQP:
         :ok | {:error, reason}
       """
-      @spec unsubscribe(ConnectionOptions.t, pid) :: :ok | {:error, String.t()} 
+      @spec unsubscribe(ConnectionOptions.t, pid) :: :ok | {:error, String.t} 
       def unsubscribe(connection_options \\ @connection_options, subscription_handler) do
         case ConnectionOptions.type(connection_options) do
           nil -> {:error, "[Messaging] The connection options do not have a type defined!"}
@@ -161,7 +161,7 @@ defmodule OpenAperture.Messaging do
 		  
 		  :ok | {:error, reason}
 		  """
-		  @spec publish(ConnectionOptions.t, Queue.t, term) :: :ok | {:error, String.t()} 
+		  @spec publish(ConnectionOptions.t, Queue.t, term) :: :ok | {:error, String.t} 
 		  def publish(connection_options \\ @connection_options, queue, payload) do
 				case ConnectionOptions.type(connection_options) do
 					nil -> {:error, "[Messaging] The connection options do not have a type defined!"}
@@ -193,7 +193,7 @@ defmodule OpenAperture.Messaging do
       
       {:ok, OpenAperture.Messaging.AMQP.RpcHandler} | {:error, reason}
       """
-      @spec publish_rpc(ConnectionOptions.t, Queue.t, term) :: {:ok, pid} | {:error, String.t()} 
+      @spec publish_rpc(ConnectionOptions.t, Queue.t, term) :: {:ok, pid} | {:error, String.t} 
       def publish_rpc(connection_options \\ @connection_options, queue, api, request) do
         case ConnectionOptions.type(connection_options) do
           nil -> {:error, "[Messaging] The connection options do not have a type defined!"}
@@ -221,7 +221,7 @@ defmodule OpenAperture.Messaging do
       
       :ok | {:error, reason}
       """
-      @spec close_connection(ConnectionOptions.t) :: :ok | {:error, String.t()} 
+      @spec close_connection(ConnectionOptions.t) :: :ok | {:error, String.t} 
       def close_connection(connection_options \\ @connection_options) do
         case ConnectionOptions.type(connection_options) do
           nil -> {:error, "[Messaging] The connection options do not have a type defined!"}

@@ -28,7 +28,7 @@ defmodule OpenAperture.Messaging.RpcRequest do
 
   Map
   """
-  @spec to_payload(RpcRequest.t) :: Map
+  @spec to_payload(RpcRequest.t) :: map
   def to_payload(request) do
     Map.from_struct(request)
   end
@@ -44,7 +44,7 @@ defmodule OpenAperture.Messaging.RpcRequest do
 
   RpcRequest.t
   """
-  @spec from_payload(Map) :: RpcRequest.t
+  @spec from_payload(map) :: RpcRequest.t
   def from_payload(payload) do
 		%RpcRequest{
 			id: payload[:id],
@@ -67,7 +67,7 @@ defmodule OpenAperture.Messaging.RpcRequest do
 
   {:ok, RpcRequest.t} | {:error, RpcRequest.t}
   """
-  @spec save(pid, RpcRequest.t) :: {:ok, RpcRequest.t} | {:error, RpcRequest.t}
+  @spec save(pid, RpcRequest.t) :: {:ok | :error, RpcRequest.t}
   def save(api, request) do
     payload = RpcRequest.to_payload(request)
   	if request.id == nil do
@@ -110,7 +110,7 @@ defmodule OpenAperture.Messaging.RpcRequest do
 
   {true, RpcRequest.t} | {false, RpcRequest.t}
   """
-  @spec completed?(pid, RpcRequest.t) :: {true, RpcRequest.t} | {false, RpcRequest.t}
+  @spec completed?(pid, RpcRequest.t) :: {true | false, RpcRequest.t}
   def completed?(api, request) do
 		response = MessagingRpcRequest.get_request(api, request.id)
     if response.success? do
