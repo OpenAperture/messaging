@@ -10,7 +10,7 @@ defmodule OpenAperture.Messaging.AMQP.ExchangeResolver do
 
   @moduledoc """
   This module contains the logic to resolve the appropriate MessagingExchange for a client
-  """  
+  """
 
   alias OpenAperture.ManagerApi
   alias OpenAperture.ManagerApi.MessagingExchange
@@ -26,7 +26,7 @@ defmodule OpenAperture.Messaging.AMQP.ExchangeResolver do
 
   {:ok, pid} | {:error, reason}
   """
-  @spec start_link() :: {:ok, pid} | {:error, String.t}   
+  @spec start_link() :: {:ok, pid} | {:error, String.t}
   def start_link do
     GenServer.start_link(__MODULE__, %{exchanges: %{}}, name: __MODULE__)
   end
@@ -61,7 +61,7 @@ defmodule OpenAperture.Messaging.AMQP.ExchangeResolver do
   The `_from` option defines the tuple {from, ref}
 
   The `state` option represents the server's current state
-  
+
   ## Return Values
 
   {:reply, AMQPExchange.t, state}
@@ -119,7 +119,7 @@ defmodule OpenAperture.Messaging.AMQP.ExchangeResolver do
         if exchange["failover_exchange_id"] != nil do
           case MessagingExchange.get_exchange!(ManagerApi.get_api, exchange["failover_exchange_id"]) do
             nil -> amqp_exchange
-            failover_exchange -> %{amqp_exchange | 
+            failover_exchange -> %{amqp_exchange |
               failover_name: failover_exchange["name"],
               failover_routing_key: failover_exchange["routing_key"],
               failover_root_exchange_name: failover_exchange["root_exchange_name"],
@@ -127,7 +127,7 @@ defmodule OpenAperture.Messaging.AMQP.ExchangeResolver do
           end
         else
           amqp_exchange
-        end        
+        end
     end
   end
 end

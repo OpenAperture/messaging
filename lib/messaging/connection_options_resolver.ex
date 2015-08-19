@@ -10,7 +10,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   @moduledoc """
   This module contains the logic to resolve the appropriate connection options for a messaging client
-  """  
+  """
 
   alias OpenAperture.ManagerApi.MessagingExchange
   alias OpenAperture.ManagerApi.MessagingBroker
@@ -24,7 +24,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   {:ok, pid} | {:error, reason}
   """
-  @spec start_link() :: {:ok, pid} | {:error, String.t}   
+  @spec start_link() :: {:ok, pid} | {:error, String.t}
   def start_link do
     GenServer.start_link(__MODULE__, %{exchanges: %{}, broker_connection_options: %{}, brokers: %{}}, name: __MODULE__)
   end
@@ -81,7 +81,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
   The `_from` option defines the tuple {from, ref}
 
   The `state` option represents the server's current state
-  
+
   ## Return Values
 
   {:reply, OpenAperture.Messaging.ConnectionOptions.t, resolved_state}
@@ -115,12 +115,12 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
   The `_from` option defines the tuple {from, ref}
 
   The `state` option represents the server's current state
-  
+
   ## Return Values
 
   {:reply, OpenAperture.Messaging.ConnectionOptions, resolved_state}
   """
-  @spec handle_call({:resolve, term, String.t, String.t, String.t}, term, Map) :: {:reply, OpenAperture.Messaging.ConnectionOptions.t, Map}
+  @spec handle_call({:resolve, term, String.t, String.t, String.t}, term, map) :: {:reply, OpenAperture.Messaging.ConnectionOptions.t, map}
   def handle_call({:resolve, api, src_broker_id, src_exchange_id, dest_exchange_id}, _from, state) do
     #is src exchange restricted?
     {src_exchange_restrictions, resolved_state} = get_restrictions_for_exchange(state, api, src_exchange_id)
@@ -130,11 +130,11 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
     {connection_option, resolved_state} = cond do
       #if the dest is restricted, we have to use the dest broker options
-      length(dest_exchange_restrictions) > 0 -> 
+      length(dest_exchange_restrictions) > 0 ->
         get_connection_option_for_brokers(resolved_state, api, dest_exchange_restrictions)
 
       #if the src is restricted, we have to use the dest broker options (don't know if src can connect to dest)
-      length(src_exchange_restrictions) > 0 -> 
+      length(src_exchange_restrictions) > 0 ->
         if length(dest_exchange_restrictions) == 0 do
           Logger.warn("[ConnectionOptionsResolver] The source exchange #{src_exchange_id} has restrictions, but no restrictions on destination exchange #{dest_exchange_id} were found.  Attempting to use source restrictions (but this may not work)...")
           get_connection_option_for_brokers(resolved_state, api, src_exchange_restrictions)
@@ -143,7 +143,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
         end
 
       #nothing is restricted, use broker associated to the source exchange
-      true -> 
+      true ->
         get_connection_option_for_broker(resolved_state, api, src_broker_id)
     end
 
@@ -163,7 +163,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   Boolean
   """
-  @spec cache_stale?(Map | nil) :: term
+  @spec cache_stale?(map | nil) :: term
   def cache_stale?(cache) do
     if cache == nil || cache[:retrieval_time] == nil do
       true
@@ -248,10 +248,10 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
           end
         else
           {nil, resolved_state}
-        end        
+        end
     end
 
-    cond do 
+    cond do
       connection_option == nil -> {nil, resolved_state}
       failover_connection_option == nil -> {connection_option, resolved_state}
       true ->
@@ -288,7 +288,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
     else
       Logger.debug("[ConnectionOptionsResolver] Connection options for broker #{broker_id} are cached")
       broker_id_cache[:connection_options]
-    end    
+    end
   end
 
   @doc """
@@ -349,11 +349,11 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
           broker_cache = Map.put(state[:brokers], broker_id, broker_cache)
           state = Map.put(state, :brokers, broker_cache)
-          {broker, state}    
+          {broker, state}
       end
     else
       {broker_cache[:broker], state}
-    end  
+    end
   end
 
   @doc """

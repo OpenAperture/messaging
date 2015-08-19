@@ -8,7 +8,7 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandler do
 
   @moduledoc """
   This module contains the logic to execute an RPC-style messaging request
-  """  
+  """
 
   @doc """
   Specific start_link implementation
@@ -27,17 +27,17 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandler do
 
   {:ok, pid} | {:error, reason}
   """
-  @spec start_link(pid, RpcRequest.t, pid, OpenAperture.Messaging.Queue.t) :: {:ok, pid} | {:error, String.t} 
+  @spec start_link(pid, RpcRequest.t, pid, OpenAperture.Messaging.Queue.t) :: {:ok, pid} | {:error, String.t}
   def start_link(api, request, connection_pool, queue) do
     case Agent.start_link(fn -> {:not_started, nil} end) do
-      {:ok, response_agent} -> 
+      {:ok, response_agent} ->
         case GenServer.start_link(__MODULE__, %{response_agent: response_agent}) do
-          {:ok, pid} -> 
+          {:ok, pid} ->
             GenServer.cast(pid, {:execute, api, request, connection_pool, queue})
             {:ok, response_agent}
           {:error, reason} -> {:error, reason}
         end
-      {:error, reason} -> {:error, reason}    
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -87,7 +87,7 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandler do
 
   {:noreply, Map}
   """
-  @spec handle_cast({:execute, pid, RpcRequest.t, pid, OpenAperture.Messaging.Queue.t}, Map) :: {:noreply, Map}
+  @spec handle_cast({:execute, pid, RpcRequest.t, pid, OpenAperture.Messaging.Queue.t}, map) :: {:noreply, map}
   def handle_cast({:execute, api, request, connection_pool, queue}, state) do
     Logger.debug("[Messaging][RpcHandler] Publishing RPC request to connection pool...")
 
@@ -96,10 +96,10 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandler do
       payload = RpcRequest.to_payload(request)
       case ConnectionPool.publish(connection_pool, queue.exchange, queue, payload) do
         {:error, reason} -> Agent.update(state[:response_agent], fn _ -> {:error, reason} end)
-        :ok -> 
+        :ok ->
           Agent.update(state[:response_agent], fn _ -> {:in_progress, nil} end)
           GenServer.cast(self, {:response_status, api, request})
-      end      
+      end
     else
       Logger.error("[Messaging][RpcHandler] Failed to save RPC request!")
       Agent.update(state[:response_agent], fn _ -> {:error, "Failed to save RPC request!"} end)

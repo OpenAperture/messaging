@@ -18,7 +18,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
 
   @moduledoc """
   This module contains the GenServer for a specific connection pool, which manages all connections to the AMQP host
-  """  
+  """
 
   ## Consumer Methods
 
@@ -33,14 +33,14 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
 
   {:ok, pid} | {:error, reason}
   """
-  @spec start_link(Keyword.t) :: {:ok, pid} | {:error, String.t}	
+  @spec start_link(Keyword.t) :: {:ok, pid} | {:error, String.t}
   def start_link(connection_options) do
     # 1. create event manager as argument
     case GenEvent.start_link do
-      {:ok, event_manager} -> 
+      {:ok, event_manager} ->
         Logger.debug("[ConnectionPool] GenEvent start was successful, starting...")
         case GenServer.start_link(__MODULE__, event_manager, []) do
-          {:ok, pool} -> 
+          {:ok, pool} ->
             __MODULE__.set_connection_options(pool, connection_options)
             {:ok, pool}
           {:error, reason} -> {:error, "[ConnectionPool] Failed to create ConnectionPool: #{inspect reason}"}
@@ -126,7 +126,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   """
   @spec publish(pid, AMQPExchange.t, Queue.t, term) :: :ok | {:error, String.t}
   def publish(connection_pool, exchange, queue, payload) do
-    GenServer.call(connection_pool, {:publish, exchange, queue, payload})    
+    GenServer.call(connection_pool, {:publish, exchange, queue, payload})
   end
 
   @doc """
@@ -159,7 +159,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   {:ok, state}
-  """  
+  """
   @spec init(term) :: {:ok, map}
   def init(args) do
     # 2. The init callback now receives the event manager.
@@ -176,16 +176,16 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
       channels: %{},
       channel_connections: %{},
       queues_for_channel: %{},
-      refs: HashDict.new      
+      refs: HashDict.new
     }
     {:ok, %{
       events: args,
       connection_options: [],
       max_connection_cnt: 1,
-      connections_info: connections_info, 
+      connections_info: connections_info,
       channels_info: channels_info
     }}
-  end  
+  end
 
   @doc """
   GenServer callback - invoked to handle call (sync) messages.  Catches {:set_connection_options, ...} messages;
@@ -198,7 +198,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   {:reply, reply, new_state}
-  """  
+  """
   @spec handle_call({:set_connection_options, Keyword.t}, term, term) :: {:reply, term, term}
   def handle_call({:set_connection_options, connection_options}, _from, state) do
     if connection_options != nil && connection_options[:max_connection_cnt] != nil do
@@ -229,7 +229,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   {:reply, reply, new_state}
-  """  
+  """
   @spec handle_call({:publish, AMQPExchange.t, Queue.t, term}, term, term) :: {:reply, term, term}
   def handle_call({:publish, exchange, queue, payload}, _from, state) do
     try do
@@ -237,12 +237,12 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
         {:reply, :ok, publish_to_failover(state, exchange, queue, payload)}
       else
         case get_channel(state) do
-          {nil, resolved_state} -> 
+          {nil, resolved_state} ->
             #get_channel can create the failover connection pool
             if resolved_state[:failover_connection_pool] != nil do
               {:reply, :ok, publish_to_failover(resolved_state, exchange, queue, payload)}
             else
-              {:reply, {:error, "[ConnectionPool] Unable to publish to queue on the AMQP broker because no channel was found"}, resolved_state}        
+              {:reply, {:error, "[ConnectionPool] Unable to publish to queue on the AMQP broker because no channel was found"}, resolved_state}
             end
           {channel_id, resolved_state} ->
             channel = resolved_state[:channels_info][:channels][channel_id]
@@ -271,7 +271,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   {:reply, :ok | {:error, reason}, new_state}
-  """  
+  """
   @spec handle_call({:unsubscribe, pid}, term, map) :: {:reply, term, term}
   def handle_call({:unsubscribe, subscription_handler}, _from, state) do
     Logger.debug("[ConnectionPool] Unsubscribing...")
@@ -310,7 +310,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   {:reply, :ok, new_state}
-  """  
+  """
   @spec handle_call({:prepare_close}, term, map) :: {:reply, term, term}
   def handle_call({:prepare_close}, _from, state) do
     Logger.debug("[ConnectionPool] Closing all channels and connections...")
@@ -326,7 +326,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   {:reply, :ok, new_state}
-  """  
+  """
   @spec handle_call({:close}, term, map) :: {:reply, term, term}
   def handle_call({:close}, _from, state) do
     Logger.debug("[ConnectionPool] Closing ConnectionPool...")
@@ -353,7 +353,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
         end
       end
     end
-    
+
     Logger.debug("[ConnectionPool] Closing all channels...")
     channels = Map.values(state[:channels_info][:channels])
     unless length(channels) == 0 do
@@ -362,7 +362,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
           Channel.close(channel)
         rescue e ->
           Logger.error("[ConnectionPool] An error occurred closing channel:  #{inspect e}")
-        end          
+        end
       end
     end
 
@@ -374,15 +374,15 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
           Connection.close(connection)
         rescue e ->
           Logger.error("[ConnectionPool] An error occurred closing connection:  #{inspect e}")
-        end          
+        end
       end
     end
 
     event_manager = case GenEvent.start_link do
-      {:ok, event_manager} -> 
+      {:ok, event_manager} ->
         Logger.debug("[ConnectionPool] GenEvent server restart was successful")
         event_manager
-      {:error, reason} -> 
+      {:error, reason} ->
         Logger.error("[ConnectionPool] Failed to start GenEvent server:  #{inspect reason}")
         nil
     end
@@ -398,14 +398,14 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
       channels: %{},
       channel_connections: %{},
       queues_for_channel: %{},
-      refs: HashDict.new      
+      refs: HashDict.new
     }
 
     resolved_state =  %{
       events: event_manager,
       connection_options: [],
       max_connection_cnt: state[:max_connection_cnt],
-      connections_info: connections_info, 
+      connections_info: connections_info,
       channels_info: channels_info
     }
 
@@ -430,7 +430,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   {:reply, {:ok, subscription_handler} | {:error, reason}, new_state}
-  """  
+  """
   @spec handle_call({:subscribe, AMQPExchange.t, Queue.t, term}, term, term) :: {:reply, term, term}
   def handle_call({:subscribe, exchange, queue, callback_handler}, _from, state) do
     Logger.debug("[ConnectionPool] Subscribing to exchange #{exchange.name}, queue #{queue.name}...")
@@ -438,12 +438,12 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
       {:reply, :ok, subscribe_to_failover(state, exchange, queue, callback_handler)}
     else
       case get_channel(state) do
-        {nil, resolved_state} -> 
+        {nil, resolved_state} ->
           #get_channel can create the failover connection pool
           if resolved_state[:failover_connection_pool] != nil do
             {:reply, :ok, subscribe_to_failover(resolved_state, exchange, queue, callback_handler)}
           else
-             {:reply, {:error, "[ConnectionPool] Unable to subsribe to queue on the AMQP broker because no channel was found"}, resolved_state}        
+             {:reply, {:error, "[ConnectionPool] Unable to subsribe to queue on the AMQP broker because no channel was found"}, resolved_state}
           end
         {channel_id, resolved_state} ->
           Logger.debug("[ConnectionPool] Using channel #{channel_id}...")
@@ -451,7 +451,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
           {:reply, {:ok, subscription_handler}, resolved_state}
       end
     end
-  end  
+  end
 
   @doc false
   # Method to publish to the failover connection pool
@@ -468,7 +468,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   # updated state
   #
   @spec publish_to_failover(term, AMQPExchange.t, Queue.t, term) :: term
-  defp publish_to_failover(state, exchange, queue, payload) do    
+  defp publish_to_failover(state, exchange, queue, payload) do
     Logger.debug("[ConnectionPool] Rerouting publishing request to failover connection pool...")
     publish(state[:failover_connection_pool], AMQPExchange.get_failover(exchange), queue, payload)
     state
@@ -480,7 +480,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Options
   #
   # The `state` option represents the server state
-  # 
+  #
   # The `exchange` option represents the AMQP exchange
   #
   # The `queue` option represents the AMQP queue
@@ -493,7 +493,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   # updated state
   #
   @spec subscribe_to_failover(term, AMQPExchange.t, Queue.t, term) :: term
-  defp subscribe_to_failover(state, exchange, queue, callback_handler) do    
+  defp subscribe_to_failover(state, exchange, queue, callback_handler) do
     Logger.debug("[ConnectionPool] Rerouting subscribe request to failover connection pool...")
     subscribe(state[:failover_connection_pool], AMQPExchange.get_failover(exchange), queue, callback_handler)
     state
@@ -512,7 +512,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   # updated state
   #
   @spec unsubscribe_from_failover(term, pid) :: term
-  defp unsubscribe_from_failover(state, subscription_handler) do    
+  defp unsubscribe_from_failover(state, subscription_handler) do
     Logger.debug("[ConnectionPool] Rerouting unsubscribe request to failover connection pool...")
     unsubscribe(state[:failover_connection_pool], subscription_handler)
     state
@@ -533,7 +533,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   {:noreply, new_state}
-  """  
+  """
   def handle_info({:DOWN, ref, :process, _pid, _reason}, state) do
     if (state[:closed] == true) do
       Logger.debug("[ConnectionPool] ConnectionPool is closed, ignoring reference #{inspect ref} :DOWN notification")
@@ -588,7 +588,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   {:noreply, new_state}
-  """  
+  """
   @spec handle_info({term, term, term, term, String.t}, term) :: {:noreply, term}
   def handle_info(_msg, state) do
     {:noreply, state}
@@ -606,7 +606,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   :ok
-  """  
+  """
   @spec terminate(pid, term) :: :ok
   def terminate(process, state) do
     Logger.debug("[ConnectionPool] Terminate:  #{inspect process} #{inspect state}")
@@ -628,8 +628,8 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   :ok
-  """  
-  @spec restart_connection(term, String.t, term) :: :ok  
+  """
+  @spec restart_connection(term, String.t, term) :: :ok
   def restart_connection(state, connection_url, retry_cnt) do
     if retry_cnt <= 0 do
       Logger.error("[ConnectionPool] Failed to restart the connection to #{state[:connection_options][:host]}; no more retries available...")
@@ -669,12 +669,12 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   :ok | {:error, reason}
-  """  
+  """
   @spec failover_connection(term, String.t) :: :ok | {:error, String.t}
   def failover_connection(state, old_connection_url) do
     failover_options = get_failover_options(state[:connection_options])
     cond do
-      state[:failover_connection_pool] -> 
+      state[:failover_connection_pool] ->
         Logger.error("[ConnectionPool] Unable to failover - connection has already been failed over")
         state
       length(failover_options) == 0 ->
@@ -728,15 +728,15 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
 
     if options[:failover_password] != nil do
       failover_options = failover_options ++ [failover_password: options[:failover_password]]
-    end    
+    end
 
     if options[:failover_host] != nil do
       failover_options = failover_options ++ [failover_host: options[:failover_host]]
-    end 
+    end
 
     if options[:failover_virtual_host] != nil do
       failover_options = failover_options ++ [failover_virtual_host: options[:failover_virtual_host]]
-    end 
+    end
 
     failover_options
   end
@@ -757,7 +757,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   {state, {:ok, channel_id}} | {state, {:error, reason}}
-  """  
+  """
   @spec restart_channel(term, String.t, String.t, term) :: {term, {:ok, String.t}} | {term, {:error, String.t}}
   def restart_channel(state, connection_url, old_channel_id, retry_cnt) do
     #have to clear out channels data first, because channel_id is process id which won't change
@@ -775,22 +775,22 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
 
     channels_info = Map.put(state[:channels_info], :refs, remaining_channel_refs)
     channels_info = Map.put(channels_info, :channels, Map.delete(channels_info[:channels], old_channel_id))
-    channels_info = Map.put(channels_info, :queues_for_channel, Map.delete(channels_info[:queues_for_channel], old_channel_id))   
+    channels_info = Map.put(channels_info, :queues_for_channel, Map.delete(channels_info[:queues_for_channel], old_channel_id))
     resolved_state = Map.put(state, :channels_info, channels_info)
 
     #start a new channel
     {resolved_state, result} = case create_channel_for_connection(resolved_state, connection_url) do
-      {nil, resolved_state} -> 
+      {nil, resolved_state} ->
         if retry_cnt <= 0 do
           Logger.error("[ConnectionPool] Failed to restart the channel #{old_channel_id} on connection #{resolved_state[:connection_options][:host]}, retrying...")
-          :timer.sleep(1000)  
-          restart_channel(resolved_state, connection_url, old_channel_id, retry_cnt-1)        
+          :timer.sleep(1000)
+          restart_channel(resolved_state, connection_url, old_channel_id, retry_cnt-1)
         else
           {resolved_state, {:error, "[ConnectionPool] Failed to restart channel #{old_channel_id}"}}
         end
       {channel_id, resolved_state} ->
         #re-register subscribers
-        
+
         resolved_state = if old_queues_for_channel != nil do
           Enum.reduce old_queues_for_channel, resolved_state, fn (subscription_handler, resolved_state) ->
             queue_info = SubscriptionHandler.get_subscription_options(subscription_handler)
@@ -820,12 +820,12 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   The `queue` option represents the AMQP queue name
 
   The `callback_handler` option represents the method that should be called when a message is received.  The handler
-  should be a function with 2 or 3arguments.  
+  should be a function with 2 or 3arguments.
 
   ## Return Values
 
   {the updated state, the new SubscriptionHandler}
-  """  
+  """
   @spec subscribe_to_queue(term, String.t, AMQPExchange.t, Queue.t, term) :: {map, pid}
   def subscribe_to_queue(state, channel_id, exchange, queue, callback_handler) do
     Logger.debug("[ConnectionPool] On channel #{channel_id}, subscribing to exchange #{exchange.name}, queue #{queue.name}, queue options #{inspect queue.options}, binding options #{inspect queue.binding_options}...")
@@ -852,17 +852,17 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   {channel_id, state} | {nil, state}
-  """  
+  """
   @spec get_channel(term) :: {term, term}
   def get_channel(state) do
     case get_connection(state) do
       {nil, resolved_state} ->
         Logger.error("[ConnectionPool] Unable to create a channel on the AMQP broker because an invalid connection was returned!")
         {nil, resolved_state}
-      {connection_url, resolved_state} -> 
+      {connection_url, resolved_state} ->
         channel_id = "#{inspect self()}"
         if state[:channels_info][:channels][channel_id] == nil do
-          create_channel_for_connection(resolved_state, connection_url)    
+          create_channel_for_connection(resolved_state, connection_url)
         else
           {channel_id, resolved_state}
         end
@@ -881,16 +881,16 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   {channel_id, state} | {nil, state}
-  """  
+  """
   @spec create_channel_for_connection(term, String.t) :: {term, term}
   def create_channel_for_connection(state, connection_url) do
     connection = state[:connections_info][:connections][connection_url]
     if connection == nil do
       Logger.error("[ConnectionPool] Unable to create a channel for connection #{connection_url}, because the cached connection is invalid!")
-      {nil, state}      
+      {nil, state}
     else
       case Channel.open(connection) do
-        {:ok, channel} -> 
+        {:ok, channel} ->
           channel_id = "#{inspect self()}"
           ref = Process.monitor(channel.pid)
 
@@ -923,11 +923,11 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
           Basic.qos(channel, prefetch_count: prefetch_count)
 
           {channel_id, resolved_state}
-        {:error, reason} ->             
+        {:error, reason} ->
           Logger.error("[ConnectionPool] Unable to create a channel on the AMQP broker: #{inspect reason}")
           {nil, state}
-      end     
-    end      
+      end
+    end
   end
 
   @doc """
@@ -940,27 +940,27 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   {connection_url, state} | {nil, state}
-  """  
+  """
   @spec get_connection(term) :: {term, term}
-  def get_connection(state) do   
+  def get_connection(state) do
     resolved_state = cond do
       #unlimited connections
-      state[:max_connection_cnt] == -1 -> 
+      state[:max_connection_cnt] == -1 ->
         Logger.debug("[ConnectionPool] Opening a new connection (unlimited)...")
         create_connections(1, state[:connection_options], state)
-      state[:connections_info][:connections] != nil && length(Map.keys(state[:connections_info][:connections])) > 0 -> 
+      state[:connections_info][:connections] != nil && length(Map.keys(state[:connections_info][:connections])) > 0 ->
         Logger.debug("[ConnectionPool] Returning existing connections...")
         state
       true ->
         Logger.debug("[ConnectionPool] Opening a new connection...")
         create_connections(state[:max_connection_cnt], state[:connection_options], state)
     end
-    
+
     if resolved_state[:connections_info][:connections] != nil do
       connection_urls = Map.keys(resolved_state[:connections_info][:connections])
       connection_cnt = length(connection_urls)
-      connection_url = cond do 
-        connection_cnt == 0 -> 
+      connection_url = cond do
+        connection_cnt == 0 ->
           Logger.error("[ConnectionPool] Unable to connect to AMQP broker #{state[:connection_options][:host]}: No available connection pools could be found!")
           nil
         connection_cnt == 1 -> List.first(connection_urls)
@@ -996,7 +996,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   state
-  """  
+  """
   def create_connections(0, _, state) do
     state
   end
@@ -1015,7 +1015,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   state
-  """  
+  """
   @spec create_connections(term, list, term) :: term
   def create_connections(connection_cnt, connection_options, state) do
     {_, resolved_state} = create_connection(connection_options, state)
@@ -1034,7 +1034,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   ## Return Values
 
   {ref, state}
-  """  
+  """
   @spec create_connection(list, term) :: {reference | nil, term}
   def create_connection(connection_options, state) do
     #port is optional, but if it's nil we need to remove it before connecting
@@ -1042,7 +1042,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
       connection_options = Keyword.delete(connection_options, :port)
     end
     case Connection.open(connection_options) do
-      {:ok, connection} -> 
+      {:ok, connection} ->
         Logger.debug("[ConnectionPool] Successfully created connection to #{connection_options[:host]}")
         ref = Process.monitor(connection.pid)
 
@@ -1055,7 +1055,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
         GenEvent.sync_notify(state[:events], {:create, connection_options[:connection_url], connection})
 
         {ref, Map.put(state, :connections_info, connections_info)}
-      {:error, reason} -> 
+      {:error, reason} ->
         Logger.error("[ConnectionPool] Unable to connect to AMQP broker #{connection_options[:host]}: #{inspect reason}")
         {nil, state}
     end
@@ -1087,5 +1087,5 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
   @spec deserialize(binary) :: term
   def deserialize(binary) do
     :erlang.binary_to_term(binary)
-  end     
+  end
 end

@@ -4,18 +4,18 @@
 # This module contains definition for an AMQP exchange
 #
 defmodule OpenAperture.Messaging.AMQP.Exchange do
-	
+
   @moduledoc """
   This module contains definition for an AMQP exchange
-  """  
+  """
 
-	defstruct name: "", 
-		type: :direct, 
+	defstruct name: "",
+		type: :direct,
 		options: [:durable],
-		routing_key: "", 
+		routing_key: "",
 		root_exchange_name: "",
-		failover_name: nil, 
-		failover_routing_key: "", 
+		failover_name: nil,
+		failover_routing_key: "",
 		failover_root_exchange_name: "",
 		auto_declare: false
 
@@ -35,8 +35,8 @@ defmodule OpenAperture.Messaging.AMQP.Exchange do
   @spec get_failover(t) :: t
 	def get_failover(exchange) do
 		%__MODULE__{
-			name: exchange.failover_name, 
-			type: exchange.type, 
+			name: exchange.failover_name,
+			type: exchange.type,
 	    routing_key: exchange.failover_routing_key,
 	    root_exchange_name: exchange.failover_root_exchange_name,
 			options: exchange.options
@@ -54,7 +54,7 @@ defmodule OpenAperture.Messaging.AMQP.Exchange do
 
   t
   """
-  @spec from_manager_exchange(Map) :: t
+  @spec from_manager_exchange(map) :: t
 	def from_manager_exchange(manager_exchange) do
 		%__MODULE__{
 	    name: manager_exchange["name"],

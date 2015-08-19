@@ -10,18 +10,18 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionOptions do
   """
 
   @type t :: %__MODULE__{}
-	defstruct id: nil, 
-    username: nil, 
-    password: nil, 
-    host: nil, 
-    port: nil, 
-    virtual_host: nil, 
+	defstruct id: nil,
+    username: nil,
+    password: nil,
+    host: nil,
+    port: nil,
+    virtual_host: nil,
     heartbeat: 60,
-    failover_id: nil, 
-    failover_username: nil, 
-    failover_password: nil, 
-    failover_host: nil, 
-    failover_port: nil, 
+    failover_id: nil,
+    failover_username: nil,
+    failover_password: nil,
+    failover_host: nil,
+    failover_port: nil,
     failover_virtual_host: nil,
     failover_heartbeat: 60
 
@@ -36,7 +36,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionOptions do
 
   String
   """
-  @spec from_map(Map) :: OpenAperture.Messaging.AMQP.ConnectionOptions.t
+  @spec from_map(map) :: OpenAperture.Messaging.AMQP.ConnectionOptions.t
   def from_map(map) do
     %OpenAperture.Messaging.AMQP.ConnectionOptions{
       id: map["id"],
@@ -78,10 +78,10 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionOptions do
         virtual_host = Keyword.get(options, :virtual_host, "")
         port = case Keyword.get(options, :port) do
         	nil -> ""
-					raw_port -> ":#{raw_port}"        	
+					raw_port -> ":#{raw_port}"
         end
         "amqp://#{user}:#{password}@#{host}#{port}/#{virtual_host}"
-      connection_url -> connection_url			
+      connection_url -> connection_url
     end
 	end
 
@@ -99,7 +99,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionOptions do
 	  :amqp
 	  """
 	  @spec type(any) :: :amqp
-	  def type(_) do 
+	  def type(_) do
 	  	:amqp
 	  end
 
@@ -123,7 +123,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionOptions do
 				port: options.port,
 				virtual_host: options.virtual_host,
         heartbeat: options.heartbeat
-			]	  
+			]
 		end
 	end
 end
