@@ -7,8 +7,8 @@ defprotocol OpenAperture.Messaging.ConnectionOptions do
 
   @moduledoc """
   This module contains the protocol definition for Messaging connection options
-  """  
-  
+  """
+
   @doc """
   Method to determine the type of options
 

@@ -12,8 +12,8 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   alias OpenAperture.Messaging.RpcRequest
   @moduledoc """
   This module contains the GenServer for managing subscription callbacks
-  """  
-  
+  """
+
   @doc """
   Creation method for subscription handlers (sync and async)
 
@@ -32,7 +32,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   @spec subscribe(map) :: pid
   def subscribe(options) do
     case GenServer.start_link(__MODULE__, options) do
-    	{:ok, subscription_handler} -> 
+    	{:ok, subscription_handler} ->
     		cond do
     			is_function(options[:callback_handler], 2) -> GenServer.call(subscription_handler, {:subscribe_sync})
     			is_function(options[:callback_handler], 3) -> GenServer.call(subscription_handler, {:subscribe_async})
@@ -155,7 +155,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
     end
 
     GenServer.call(subscription_handler, {:reject, delivery_tag, redeliver})
-  end  
+  end
 
   @doc """
   Method to unsubscribe from a queue (tied to the SubscriptionHandler)
@@ -298,9 +298,9 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
 
 	  #link these processes together
 	  subscription_handler = self()
-	  request_handler_pid = spawn_link fn -> 
+	  request_handler_pid = spawn_link fn ->
 	  	Logger.debug("[SubscriptionHandler] Attempting to establish connection (subscription handler #{inspect subscription_handler}, child #{inspect self()})...")
-	  	start_async_handler(channel, callback_handler, subscription_handler) 
+	  	start_async_handler(channel, callback_handler, subscription_handler)
 	  end
 
 	  try do
@@ -323,7 +323,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   The `payload` option represents raw payload of the message
 
   The `meta` option represents the metadata associated with the message
-  
+
   The `_from` option defines the tuple {from, ref}
 
   The `state` option represents the server's current state
@@ -343,7 +343,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   ## Options
 
   The `delivery_tag` option defines the delivery tag of the messsage
-  
+
   The `_from` option defines the tuple {from, ref}
 
   The `state` option represents the server's current state
@@ -366,7 +366,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   The `delivery_tag` option defines the delivery tag of the messsage
 
   The `redeliver` option defines a boolean that can requeue a message
-  
+
   The `_from` option defines the tuple {from, ref}
 
   The `state` option represents the server's current state
@@ -389,20 +389,20 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   The `subscription_handler_options` option defines the options associated with the SubscriptionHandler that will be used to process the message
 
   The `subscription_handler` option defines the PID of the SubscriptionHandler that will be used to process the message
-  
+
   The `payload` option represents raw payload of the message
 
   The `meta` option represents the metadata associated with the message
   """
   @spec execute_callback_handler(map, pid, term, map) :: term
-  def execute_callback_handler(subscription_handler_options, subscription_handler, payload, %{delivery_tag: delivery_tag, redelivered: redelivered} = meta) do   
+  def execute_callback_handler(subscription_handler_options, subscription_handler, payload, %{delivery_tag: delivery_tag, redelivered: redelivered} = meta) do
   	case deserialize_payload(payload, delivery_tag) do
-  		{false, _} -> 
+  		{false, _} ->
   			Basic.reject(subscription_handler_options[:channel], delivery_tag, requeue: false)
   		{true, deserialized_payload} ->
 	  		cond do
           #sync
-	  			is_function(subscription_handler_options[:callback_handler], 2) -> 
+	  			is_function(subscription_handler_options[:callback_handler], 2) ->
 				    try do
 							subscription_handler_options[:callback_handler].(deserialized_payload, meta)
 				    rescue exception ->
@@ -417,8 +417,8 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
 				      end
 				    end
           #async
-	  			is_function(subscription_handler_options[:callback_handler], 3) -> 
-	  				spawn fn -> 
+	  			is_function(subscription_handler_options[:callback_handler], 3) ->
+	  				spawn fn ->
 					    try do
 								subscription_handler_options[:callback_handler].(deserialized_payload, meta, %{subscription_handler: subscription_handler, delivery_tag: delivery_tag})
 					    rescue exception ->
@@ -433,7 +433,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
 					      end
 					    end
 	  				end
-	  			true -> 
+	  			true ->
 	  				Logger.error("[SubscriptionHandler] An error occurred processing request #{inspect delivery_tag}:  callback_handler is an unknown arity!")
 	  				Basic.reject(subscription_handler_options[:channel], delivery_tag, requeue: true)
 	  		end
@@ -444,17 +444,17 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   Method to deserialize the request payload
 
   ## Options
-  
+
   The `payload` option represents raw payload of the message
 
-  The `delivery_tag` option represents the identifier of the message  
+  The `delivery_tag` option represents the identifier of the message
 
   ## Return Value
 
   {deserialization success/failure, payload}
 
   """
-  @spec deserialize_payload(String.t, term) :: term  
+  @spec deserialize_payload(String.t, term) :: term
 	def deserialize_payload(payload, delivery_tag) do
   	try do
     	{true, deserialize(payload)}
@@ -469,20 +469,20 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   you'll start to receive messages
 
   ## Options
-  
+
   The `channel_id` option represents the ID of the AMQP channel
 
   The `callback_handler` option represents the method that should be called when a message is received.  The handler
-  should be a function with 2 or 3 arguments.    
+  should be a function with 2 or 3 arguments.
 
   The `subscription_handler` option defines the PID of the SubscriptionHandler that will be used to process the message
 
   """
-  @spec start_async_handler(String.t, term, pid) :: term  
+  @spec start_async_handler(String.t, term, pid) :: term
   def start_async_handler(channel, callback_handler, subscription_handler) do
   	Logger.debug("[SubscriptionHandler] Waiting to establish connection...")
 		receive do
-      {:basic_consume_ok, %{consumer_tag: _consumer_tag}} -> 
+      {:basic_consume_ok, %{consumer_tag: _consumer_tag}} ->
       	Logger.debug("[SubscriptionHandler] Successfully established connection to the broker!  Waiting for messages...")
       	process_async_request(channel, callback_handler, subscription_handler)
       other ->
@@ -494,11 +494,11 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   Method to process messages from the AMQP client, and execute the corresponding callback_handler
 
   ## Options
-  
+
   The `channel_id` option represents the ID of the AMQP channel
 
   The `callback_handler` option represents the method that should be called when a message is received.  The handler
-  should be a function with 2 or 3 arguments.    
+  should be a function with 2 or 3 arguments.
 
   The `subscription_handler` option defines the PID of the SubscriptionHandler that will be used to process the message
 
@@ -506,7 +506,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   @spec process_async_request(String.t, term, pid) :: term
   def process_async_request(channel, callback_handler, subscription_handler) do
     receive do
-      {:basic_deliver, payload, meta} -> 
+      {:basic_deliver, payload, meta} ->
       	subscription_handler_options = OpenAperture.Messaging.AMQP.SubscriptionHandler.get_subscription_options(subscription_handler)
       	execute_callback_handler(subscription_handler_options, subscription_handler, payload, meta)
         process_async_request(channel, callback_handler, subscription_handler)
@@ -514,7 +514,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
         exit(:basic_cancel)
       {:basic_cancel_ok, %{}} ->
         exit(:normal)
-    end  	
+    end
   end
 
   @doc """
@@ -525,7 +525,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   The `term` option defines the term to serialize
 
   ## Return Value
-  
+
   term
   """
   @spec serilalize(term) :: binary
@@ -541,11 +541,11 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   The `binary` option defines the term to deserialize
 
   ## Return Value
-  
+
   term
   """
   @spec deserialize(binary) :: term
   def deserialize(binary) do
     :erlang.binary_to_term(binary)
-  end   
+  end
 end

@@ -9,7 +9,7 @@ defmodule OpenAperture.Messaging.AMQP.QueueBuilder do
 
   @moduledoc """
   This module contains the logic to build a populated OpenAperture.Messaging.Queue
-  """  
+  """
 
 	alias OpenAperture.Messaging.Queue
 	alias OpenAperture.Messaging.AMQP.ExchangeResolver
@@ -24,7 +24,7 @@ defmodule OpenAperture.Messaging.AMQP.QueueBuilder do
 
   The `queue_name` options value provides the name of the Queue
 
-  The `exchange_id` option defines the exchange id to retrieve  
+  The `exchange_id` option defines the exchange id to retrieve
 
   The `options` option deinfes additional Queue options
 
@@ -44,12 +44,12 @@ defmodule OpenAperture.Messaging.AMQP.QueueBuilder do
       _   -> binding_options
     end
     options_default = [
-      durable: true, 
+      durable: true,
       arguments: [{"x-dead-letter-exchange", :longstr, ""},{"x-dead-letter-routing-key", :longstr, "#{queue_name}_error"}]
     ]
 
     %Queue{
-      name: queue_name, 
+      name: queue_name,
       exchange: exchange,
       error_queue: "#{queue_name}_error",
       options: Keyword.merge(options_default, options),

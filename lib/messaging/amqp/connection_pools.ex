@@ -14,7 +14,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
 
   @moduledoc """
   This module contains the GenServer for managing getting ConnectionPools
-  """  
+  """
 
   ## Consumer Methods
 
@@ -27,7 +27,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
 
   {:ok, pid} | {:error, reason}
   """
-  @spec start_link() :: {:ok, pid} | {:error, String.t}   
+  @spec start_link() :: {:ok, pid} | {:error, String.t}
   def start_link do
     create()
   end
@@ -41,7 +41,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
 
   {:ok, pid} | {:error, reason}
   """
-  @spec create() :: {:ok, pid} | {:error, String.t}	
+  @spec create() :: {:ok, pid} | {:error, String.t}
   def create() do
     GenServer.start_link(__MODULE__, %{pools: %{}, connection_options: %{}}, name: __MODULE__)
   end
@@ -91,21 +91,21 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
   ## Return Values
 
   {:reply, pool, new_state}
-  """  
+  """
   @spec handle_call({:get_pool, Keyword.t}, term, term) :: {:reply, term, term}
   def handle_call({:get_pool, connection_options}, _from, state) do
     connection_options = if connection_options[:connection_url] != nil do
       connection_options
     else
       connection_url = AMQPConnectionOptions.get_connection_url(connection_options)
-      Keyword.update(connection_options, :connection_url, connection_url, fn(_) -> connection_url end)      
+      Keyword.update(connection_options, :connection_url, connection_url, fn(_) -> connection_url end)
     end
     connection_url = Keyword.get(connection_options, :connection_url)
 
     case state[:pools][connection_url] do
       nil ->
         case start_connection_pool(connection_options, state) do
-          {:ok, pool, resolved_state} -> 
+          {:ok, pool, resolved_state} ->
             Logger.debug("[ConnectionPools] Successfully started ConnectionPool for #{connection_options[:host]}")
             {:reply, pool, resolved_state}
           {:error, reason, resolved_state} ->
@@ -127,14 +127,14 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
   ## Return Values
 
   {:reply, :ok, new_state}
-  """  
+  """
   @spec handle_call({:remove_pool, list}, term, term) :: {:reply, term, term}
   def handle_call({:remove_pool, connection_options}, _from, state) do
     connection_options = if connection_options[:connection_url] != nil do
       connection_options
     else
       connection_url = AMQPConnectionOptions.get_connection_url(connection_options)
-      Keyword.update(connection_options, :connection_url, connection_url, fn(_) -> connection_url end)      
+      Keyword.update(connection_options, :connection_url, connection_url, fn(_) -> connection_url end)
     end
     connection_url = Keyword.get(connection_options, :connection_url)
 
@@ -144,14 +144,14 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
 
     #remove reference to ConnectionPool
     resolved_state = case resolved_state[:pools][connection_url] do
-      nil -> 
+      nil ->
         Logger.debug("[ConnectionPools] ConnectionPool #{connection_options[:host]} was not registered")
         resolved_state
-      _ -> 
+      _ ->
         Logger.debug("[ConnectionPools] Successfully removed ConnectionPool #{connection_options[:host]}")
         Map.put(resolved_state, :pools, Map.delete(resolved_state[:pools], connection_url))
-    end 
-    {:reply, :ok, resolved_state}       
+    end
+    {:reply, :ok, resolved_state}
   end
 
   @doc """
@@ -168,11 +168,11 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
   @spec start_connection_pool(Keyword.t, term) :: {:ok, term, term} | {:error, String.t, term}
   def start_connection_pool(connection_options, state) do
     case ConnectionPool.start_link(connection_options) do
-      {:ok, pool} -> 
+      {:ok, pool} ->
         state = Map.put(state, :pools, Map.put(state[:pools], connection_options[:connection_url], pool))
         state = Map.put(state, :connection_options, Map.put(state[:connection_options], connection_options[:connection_url], connection_options))
         {:ok, pool, state}
       {:error, reason} -> {:error, reason, state}
-    end    
+    end
   end
 end

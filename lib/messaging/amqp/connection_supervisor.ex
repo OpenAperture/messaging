@@ -10,10 +10,10 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionSupervisor do
 
   @moduledoc """
   This module contains the supervisor for the ConnectionPools
-  """  
-  
+  """
+
   @doc """
-  Specific start_link implementation 
+  Specific start_link implementation
 
   ## Options
 
@@ -37,7 +37,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionSupervisor do
   ## Return Values
 
   {:ok, state} | {:ok, state, timeout} | :ignore | {:stop, reason}
-  """  
+  """
   @spec init(term) :: {:ok, term} | {:ok, term, term} | :ignore | {:stop, String.t}
   def init([]) do
     import Supervisor.Spec

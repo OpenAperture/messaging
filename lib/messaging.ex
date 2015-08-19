@@ -10,7 +10,7 @@ defmodule OpenAperture.Messaging do
 
   @moduledoc """
   This module contains definition the OpenAperture Messaging implementation
-  """  
+  """
 
   @doc """
   Starts the given `_type`.
@@ -98,7 +98,7 @@ defmodule OpenAperture.Messaging do
 		  for AMQP:
         {:ok, subscription_handler} | {:error, reason}
 		  """
-		  @spec subscribe(ConnectionOptions.t, Queue.t, term) :: {:ok, term} | {:error, String.t} 
+		  @spec subscribe(ConnectionOptions.t, Queue.t, term) :: {:ok, term} | {:error, String.t}
 			def subscribe(connection_options \\ @connection_options, queue, callback_handler) do
         case ConnectionOptions.type(connection_options) do
 					nil -> {:error, "[Messaging] The connection options do not have a type defined!"}
@@ -109,7 +109,7 @@ defmodule OpenAperture.Messaging do
 							{:error, "[Messaging] Unable to subscribe - failed to retrieve a connection pool for #{connection_options.host}!"}
 						else
 							Logger.debug("[Messaging] Subscribing to connection pool #{connection_options.host}...")
-							ConnectionPool.subscribe(connection_pool, queue.exchange, queue, callback_handler)						
+							ConnectionPool.subscribe(connection_pool, queue.exchange, queue, callback_handler)
 						end
 					_ -> {:error, "[Messaging] Connection type #{inspect ConnectionOptions.type(connection_options)} is unknown!"}
 				end
@@ -129,7 +129,7 @@ defmodule OpenAperture.Messaging do
       for AMQP:
         :ok | {:error, reason}
       """
-      @spec unsubscribe(ConnectionOptions.t, pid) :: :ok | {:error, String.t} 
+      @spec unsubscribe(ConnectionOptions.t, pid) :: :ok | {:error, String.t}
       def unsubscribe(connection_options \\ @connection_options, subscription_handler) do
         case ConnectionOptions.type(connection_options) do
           nil -> {:error, "[Messaging] The connection options do not have a type defined!"}
@@ -140,10 +140,10 @@ defmodule OpenAperture.Messaging do
               {:error, "[Messaging] Unable to unsubscribe - failed to retrieve a connection pool for #{connection_options.host}!"}
             else
               Logger.debug("Subscribing to connection pool  #{connection_options.host}...")
-              ConnectionPool.unsubscribe(connection_pool, subscription_handler)            
+              ConnectionPool.unsubscribe(connection_pool, subscription_handler)
             end
           _ -> {:error, "[Messaging] Connection type #{inspect ConnectionOptions.type(connection_options)} is unknown!"}
-        end        
+        end
       end
 
 		  @doc """
@@ -158,10 +158,10 @@ defmodule OpenAperture.Messaging do
   		The `payload` option represents the message data
 
 		  ## Returns
-		  
+
 		  :ok | {:error, reason}
 		  """
-		  @spec publish(ConnectionOptions.t, Queue.t, term) :: :ok | {:error, String.t} 
+		  @spec publish(ConnectionOptions.t, Queue.t, term) :: :ok | {:error, String.t}
 		  def publish(connection_options \\ @connection_options, queue, payload) do
 				case ConnectionOptions.type(connection_options) do
 					nil -> {:error, "[Messaging] The connection options do not have a type defined!"}
@@ -170,9 +170,9 @@ defmodule OpenAperture.Messaging do
 						connection_pool = ConnectionPools.get_pool(ConnectionOptions.get(connection_options))
 						if connection_pool == nil do
 							{:error, "[Messaging] Unable to publish - failed to retrieve a connection pool for #{connection_options.host}!"}
-						else						
+						else
 							Logger.debug("[Messaging] Publishing to connection pool #{connection_options.host}...")
-							ConnectionPool.publish(connection_pool, queue.exchange, queue, payload)						
+							ConnectionPool.publish(connection_pool, queue.exchange, queue, payload)
 						end
 					_ -> {:error, "[Messaging] Connection type #{inspect ConnectionOptions.type(connection_options)} is unknown!"}
 				end
@@ -190,10 +190,10 @@ defmodule OpenAperture.Messaging do
       The `request` option represents the message data
 
       ## Returns
-      
+
       {:ok, OpenAperture.Messaging.AMQP.RpcHandler} | {:error, reason}
       """
-      @spec publish_rpc(ConnectionOptions.t, Queue.t, term) :: {:ok, pid} | {:error, String.t} 
+      @spec publish_rpc(ConnectionOptions.t, Queue.t, term) :: {:ok, pid} | {:error, String.t}
       def publish_rpc(connection_options \\ @connection_options, queue, api, request) do
         case ConnectionOptions.type(connection_options) do
           nil -> {:error, "[Messaging] The connection options do not have a type defined!"}
@@ -202,7 +202,7 @@ defmodule OpenAperture.Messaging do
             connection_pool = ConnectionPools.get_pool(ConnectionOptions.get(connection_options))
             if connection_pool == nil do
               {:error, "[Messaging] Unable to publish RPC request - failed to retrieve a connection pool for #{connection_options.host}!"}
-            else            
+            else
               Logger.debug("[Messaging] Genearting an RPC request...")
               RpcHandler.start_link(api, request, connection_pool, queue)
             end
@@ -218,10 +218,10 @@ defmodule OpenAperture.Messaging do
       The `connection_options` options value provides the ConnectionOptions; defaults to the @connection_options attribute
 
       ## Returns
-      
+
       :ok | {:error, reason}
       """
-      @spec close_connection(ConnectionOptions.t) :: :ok | {:error, String.t} 
+      @spec close_connection(ConnectionOptions.t) :: :ok | {:error, String.t}
       def close_connection(connection_options \\ @connection_options) do
         case ConnectionOptions.type(connection_options) do
           nil -> {:error, "[Messaging] The connection options do not have a type defined!"}
@@ -231,14 +231,14 @@ defmodule OpenAperture.Messaging do
             connection_pool = ConnectionPools.get_pool(amqp_connection_options)
             if connection_pool == nil do
               {:error, "[Messaging] Unable to close connection - failed to retrieve a connection pool for #{connection_options.host}!"}
-            else            
+            else
               Logger.debug("[Messaging] Closing connection pool #{connection_options.host}...")
               ConnectionPools.remove_pool(amqp_connection_options)
               ConnectionPool.close(connection_pool)
             end
           _ -> {:error, "[Messaging] Connection type #{inspect ConnectionOptions.type(connection_options)} is unknown!"}
         end
-      end      
+      end
     end
   end
 end
