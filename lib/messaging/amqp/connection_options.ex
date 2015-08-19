@@ -36,7 +36,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionOptions do
 
   String
   """
-  @spec from_map(Map) :: OpenAperture.Messaging.AMQP.ConnectionOptions.t
+  @spec from_map(map) :: OpenAperture.Messaging.AMQP.ConnectionOptions.t
   def from_map(map) do
     %OpenAperture.Messaging.AMQP.ConnectionOptions{
       id: map["id"],

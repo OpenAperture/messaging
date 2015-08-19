@@ -120,7 +120,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   {:reply, OpenAperture.Messaging.ConnectionOptions, resolved_state}
   """
-  @spec handle_call({:resolve, term, String.t, String.t, String.t}, term, Map) :: {:reply, OpenAperture.Messaging.ConnectionOptions.t, Map}
+  @spec handle_call({:resolve, term, String.t, String.t, String.t}, term, map) :: {:reply, OpenAperture.Messaging.ConnectionOptions.t, map}
   def handle_call({:resolve, api, src_broker_id, src_exchange_id, dest_exchange_id}, _from, state) do
     #is src exchange restricted?
     {src_exchange_restrictions, resolved_state} = get_restrictions_for_exchange(state, api, src_exchange_id)
@@ -163,7 +163,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   Boolean
   """
-  @spec cache_stale?(Map | nil) :: term
+  @spec cache_stale?(map | nil) :: term
   def cache_stale?(cache) do
     if cache == nil || cache[:retrieval_time] == nil do
       true

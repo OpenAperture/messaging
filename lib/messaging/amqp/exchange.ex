@@ -54,7 +54,7 @@ defmodule OpenAperture.Messaging.AMQP.Exchange do
 
   t
   """
-  @spec from_manager_exchange(Map) :: t
+  @spec from_manager_exchange(map) :: t
 	def from_manager_exchange(manager_exchange) do
 		%__MODULE__{
 	    name: manager_exchange["name"],

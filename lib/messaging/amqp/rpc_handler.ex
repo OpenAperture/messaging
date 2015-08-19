@@ -87,7 +87,7 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandler do
 
   {:noreply, Map}
   """
-  @spec handle_cast({:execute, pid, RpcRequest.t, pid, OpenAperture.Messaging.Queue.t}, Map) :: {:noreply, Map}
+  @spec handle_cast({:execute, pid, RpcRequest.t, pid, OpenAperture.Messaging.Queue.t}, map) :: {:noreply, map}
   def handle_cast({:execute, api, request, connection_pool, queue}, state) do
     Logger.debug("[Messaging][RpcHandler] Publishing RPC request to connection pool...")
 
