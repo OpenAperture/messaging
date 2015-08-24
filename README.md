@@ -12,6 +12,10 @@ Currently this library utlizes an AMQP client as its primary communication mecha
 * Synchronous delivery and auto-acknowledgement/rejection of messages
 * Asynchronous delivery without acknowledgement of messages (consumer is required to acknowledge/reject)
 
+## Contributing
+
+To contribute to OpenAperture development, view our [contributing guide](http://openaperture.io/dev_resources/contributing.html)
+
 ## Usage
 
 The messaging component is defined via the "using" macro, and can be included in other modules.  Remember to add the :openaperture_messaging application to your Elixir application or module.
