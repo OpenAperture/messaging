@@ -85,7 +85,7 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandler do
 
   ## Return Values
 
-  {:noreply, Map}
+      {:noreply, Map}
   """
   @spec handle_cast({:execute, pid, RpcRequest.t, pid, OpenAperture.Messaging.Queue.t}, map) :: {:noreply, map}
   def handle_cast({:execute, api, request, connection_pool, queue}, state) do
@@ -120,7 +120,7 @@ defmodule OpenAperture.Messaging.AMQP.RpcHandler do
 
   ## Return Values
 
-  {:noreply, Map}
+      {:noreply, Map}
   """
   @spec handle_cast({:response_status, pid, RpcRequest.t, pid}, map) :: {:noreply, map}
   def handle_cast({:response_status, api, request}, state) do

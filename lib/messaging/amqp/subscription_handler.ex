@@ -182,7 +182,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   The `state` option represents the server's current state
 
   ## Return Value
-  {:reply, :ok, state}
+      {:reply, :ok, state}
   """
   @spec handle_call({:unsubscribe}, term, map) :: {:reply, :ok, map}
   def handle_call({:unsubscribe}, _from, %{channel: channel, consumer_tag: consumer_tag} = state) do
@@ -241,7 +241,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   The `state` option represents the server's current state
 
   ## Return Value
-  {:reply, :ok, state}
+      {:reply, :ok, state}
   """
   @spec handle_call({:subscribe_sync}, term, map) :: {:reply, :ok, map}
   def handle_call({:subscribe_sync}, _from, %{channel: channel, exchange: exchange, queue: queue, callback_handler: _callback_handler} = state) do
@@ -329,7 +329,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   The `state` option represents the server's current state
 
   ## Return Value
-  {:reply, :ok, state}
+      {:reply, :ok, state}
   """
   @spec handle_call({:process_request, map, map}, term, map) :: {:reply, :ok, map}
   def handle_call({:process_request, payload, meta}, _from, state) do
@@ -372,7 +372,7 @@ defmodule OpenAperture.Messaging.AMQP.SubscriptionHandler do
   The `state` option represents the server's current state
 
   ## Return Value
-  {:reply, :ok, state}
+      {:reply, :ok, state}
   """
   @spec handle_call({:reject, String.t, term}, term, map) :: {:reply, :ok, map}
   def handle_call({:reject, delivery_tag, redeliver}, _from, state) do

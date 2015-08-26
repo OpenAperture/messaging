@@ -126,7 +126,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPools do
 
   ## Return Values
 
-  {:reply, :ok, new_state}
+      {:reply, :ok, new_state}
   """
   @spec handle_call({:remove_pool, list}, term, term) :: {:reply, term, term}
   def handle_call({:remove_pool, connection_options}, _from, state) do

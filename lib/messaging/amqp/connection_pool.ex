@@ -158,7 +158,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
 
   ## Return Values
 
-  {:ok, state}
+      {:ok, state}
   """
   @spec init(term) :: {:ok, map}
   def init(args) do
@@ -309,7 +309,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
 
   ## Return Values
 
-  {:reply, :ok, new_state}
+      {:reply, :ok, new_state}
   """
   @spec handle_call({:prepare_close}, term, map) :: {:reply, term, term}
   def handle_call({:prepare_close}, _from, state) do
@@ -325,7 +325,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
 
   ## Return Values
 
-  {:reply, :ok, new_state}
+      {:reply, :ok, new_state}
   """
   @spec handle_call({:close}, term, map) :: {:reply, term, term}
   def handle_call({:close}, _from, state) do
@@ -532,7 +532,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
 
   ## Return Values
 
-  {:noreply, new_state}
+      {:noreply, new_state}
   """
   def handle_info({:DOWN, ref, :process, _pid, _reason}, state) do
     if (state[:closed] == true) do
@@ -587,7 +587,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionPool do
 
   ## Return Values
 
-  {:noreply, new_state}
+      {:noreply, new_state}
   """
   @spec handle_info({term, term, term, term, String.t}, term) :: {:noreply, term}
   def handle_info(_msg, state) do

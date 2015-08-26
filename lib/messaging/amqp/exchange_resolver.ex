@@ -64,7 +64,7 @@ defmodule OpenAperture.Messaging.AMQP.ExchangeResolver do
 
   ## Return Values
 
-  {:reply, AMQPExchange.t, state}
+      {:reply, AMQPExchange.t, state}
   """
   @spec handle_call({:get, pid, String.t}, term, map) :: {:reply, AMQPExchange.t, map}
   def handle_call({:get, api, exchange_id}, _from, state) do

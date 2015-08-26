@@ -118,7 +118,7 @@ defmodule OpenAperture.Messaging.ConnectionOptionsResolver do
 
   ## Return Values
 
-  {:reply, OpenAperture.Messaging.ConnectionOptions, resolved_state}
+      {:reply, OpenAperture.Messaging.ConnectionOptions, resolved_state}
   """
   @spec handle_call({:resolve, term, String.t, String.t, String.t}, term, map) :: {:reply, OpenAperture.Messaging.ConnectionOptions.t, map}
   def handle_call({:resolve, api, src_broker_id, src_exchange_id, dest_exchange_id}, _from, state) do

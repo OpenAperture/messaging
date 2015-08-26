@@ -36,7 +36,7 @@ defmodule OpenAperture.Messaging.AMQP.ConnectionSupervisor do
 
   ## Return Values
 
-  {:ok, state} | {:ok, state, timeout} | :ignore | {:stop, reason}
+      {:ok, state} | {:ok, state, timeout} | :ignore | {:stop, reason}
   """
   @spec init(term) :: {:ok, term} | {:ok, term, term} | :ignore | {:stop, String.t}
   def init([]) do
